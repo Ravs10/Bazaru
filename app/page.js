@@ -280,8 +280,14 @@ export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
-  const [adminPass, setAdminPass] = useState("");
+  const [password, setPassword] = useState("");
+  const [authMode, setAuthMode] = useState("login"); // login | signup | forgot
+  const [newPassword, setNewPassword] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [allUsers, setAllUsers] = useState([]);
+  const [adminTab, setAdminTab] = useState("products"); // products | users | sliders
+  const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(null);
   const [slide, setSlide] = useState(0);
   const [timeLeft, setTimeLeft] = useState("00:00:00");
@@ -289,13 +295,121 @@ export default function Home() {
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
   const [showCoinShop, setShowCoinShop] = useState(false);
   const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
-  // === NEW: 3 TABLES ===
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
   const [clickCount, setClickCount] = useState(0);
 
+  /* ---------- NOTIFY HELPER ---------- */
+  const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
+
+  /* ---------- STRONG AUTH - SUPABASE ---------- */
+  const loadProfile = async (authUser) => {
+    if (!authUser) return null;
+    const { data } = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
+    if (!data) {
+      await supabase.from("profiles").insert([{ id: authUser.id, email: authUser.email, name: authUser.email.split("@")[0], role: "user" }]);
+      return { email: authUser.email, name: authUser.email.split("@")[0], role: "user", id: authUser.id, coins: 0 };
+    }
+    return data;
+  };
+
+  const handleSignup = async () => {
+    if (!email.includes("@")) return notify("Sahi email dalo", "error");
+    if (password.length < 6) return notify("Password kam se kam 6 ka hona chahiye", "error");
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signUp({ email: email.trim(), password });
+    setAuthLoading(false);
+    if (error) return notify(error.message, "error");
+    notify("Account ban gaya! Ab Login karo ✅");
+    setAuthMode("login");
+  };
+
+  const handleAuthLogin = async () => {
+    if (!email || !password) return notify("Email + Password dono dalo", "error");
+    setAuthLoading(true);
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setAuthLoading(false);
+    if (error) return notify("Galat email ya password!", "error");
+    const prof = await loadProfile(data.user);
+    if (prof?.is_blocked) {
+      await supabase.auth.signOut();
+      return notify("Tumhara account Admin ne Block kar diya hai!", "error");
+    }
+    const u = { id: data.user.id, email: data.user.email, name: prof?.name || email.split("@")[0], role: prof?.role || "user", coins: prof?.coins || 0 };
+    setUser(u);
+    setCoins(prof?.coins || 0);
+    if (prof?.role === "admin" || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
+    setShowLogin(false); setPassword("");
+    notify(`Welcome, ${u.name}! 👋`);
+  };
+
+  const handleForgot = async () => {
+    if (!email.includes("@")) return notify("Pehle email dalo, fir Forgot dabao", "error");
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
+    if (error) return notify(error.message, "error");
+    notify("Reset link email pe bhej diya! 📧 Email check karo");
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) return notify("Naya password 6+ ka rakho", "error");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return notify(error.message, "error");
+    notify("Password badal gaya ✅");
+    setNewPassword("");
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
+    setUser(null); setIsAdmin(false); setCoins(0);
+    notify("Logged out", "error");
+  };
+
+  /* ---------- ADMIN - POWERFUL ---------- */
+  const loadAllUsers = async () => {
+    const { data } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+    if (data) setAllUsers(data);
+  };
+  const toggleBlock = async (u) => {
+    await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
+    loadAllUsers();
+    notify(u.is_blocked ? "User Unblock ho gaya" : "User Block ho gaya", "error");
+  };
+  const addCoinsToUser = async (u, amt) => {
+    const newCoins = (u.coins || 0) + amt;
+    await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
+    if (user?.id === u.id) setCoins(newCoins);
+    loadAllUsers(); notify(`${amt} coins diye ✅`);
+  };
+  const toggleAdminRole = async (u) => {
+    if (u.email === ADMIN_EMAIL) return notify("Super Admin ka role nahi badal sakte!", "error");
+    await supabase.from("profiles").update({ role: u.role === "admin" ? "user" : "admin" }).eq("id", u.id);
+    loadAllUsers(); notify("Role badal gaya ✅");
+  };
+  const deleteUserProfile = async (u) => {
+    if (u.email === ADMIN_EMAIL) return notify("Super Admin ko delete nahi kar sakte!", "error");
+    if (!confirm(`Pakka ${u.email} ko delete karna hai?`)) return;
+    await supabase.from("profiles").delete().eq("id", u.id);
+    loadAllUsers(); notify("User delete ho gaya", "error");
+  };
+  const handleAdminOpen = () => {
+    if (!user) return notify("Pehle Login karo!", "error");
+    if (user.role !== "admin" && user.email !== ADMIN_EMAIL) return notify("Sirf Admin khol sakta hai!", "error");
+    setIsAdmin(true); loadAllUsers(); setShowAdmin(true);
+  };
+
   /* ---------- INIT - SUPABASE SE LOAD ---------- */
   useEffect(() => {
+    // Restore session if already logged in
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (data?.session?.user) {
+        const prof = await loadProfile(data.session.user);
+        if (prof?.is_blocked) { await supabase.auth.signOut(); return; }
+        setUser({ id: data.session.user.id, email: data.session.user.email, name: prof?.name || "User", role: prof?.role || "user" });
+        setCoins(prof?.coins || 0);
+        if (prof?.role === "admin" || data.session.user.email === ADMIN_EMAIL) setIsAdmin(true);
+      }
+    });
+
     const loadProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -314,20 +428,15 @@ export default function Home() {
     };
     loadProducts();
 
-    // Sliders Supabase se
-    supabase.from("sliders").select("*").eq("is_active", true).order("created_at", { ascending: true }).then(({data}) => {
-      if(data && data.length > 0) setSlides(data);
+    supabase.from("sliders").select("*").eq("is_active", true).order("created_at", { ascending: true }).then(({ data }) => {
+      if (data && data.length > 0) setSlides(data);
     });
 
     try {
-      const su = localStorage.getItem("bazaru_user");
-      if (su) setUser(JSON.parse(su));
       const sc = localStorage.getItem("bazaru_cart_v2");
       if (sc) setCart(JSON.parse(sc).map(c => ({ ...c, qty: c.qty || 1 })));
       const sw = localStorage.getItem("bazaru_wish");
       if (sw) setWishlist(JSON.parse(sw));
-      const savedCoins = localStorage.getItem("bazaru_coins");
-      if(savedCoins) setCoins(Number(savedCoins));
     } catch (e) {}
   }, []);
 
@@ -369,8 +478,6 @@ export default function Home() {
   }, [anyOpen]);
 
   /* ---------- HELPERS ---------- */
-  const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
-
   const saveCart = (list) => { setCart(list); localStorage.setItem("bazaru_cart_v2", JSON.stringify(list)); };
   const saveWish = (list) => { setWishlist(list); localStorage.setItem("bazaru_wish", JSON.stringify(list)); };
 
@@ -396,22 +503,6 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-  const handleLogin = () => {
-    if (!email.trim()) return notify("Enter your email", "error");
-    const u = { email: email.trim(), name: email.split("@")[0] };
-    setUser(u);
-    localStorage.setItem("bazaru_user", JSON.stringify(u));
-    setShowLogin(false); setEmail("");
-    notify(`Welcome, ${u.name}! 👋`);
-  };
-  const logout = () => { setUser(null); localStorage.removeItem("bazaru_user"); notify("Logged out", "error"); };
-
-  const handleAdminLogin = () => {
-    if (adminPass === "admin123") { setIsAdmin(true); notify("Admin logged in ⚙️"); }
-    else notify("Wrong password! Default: admin123", "error");
-  };
-
-  // === NEW: BUY NOW CLICK TRACK ===
   const handleBuyClick = async (p) => {
     try {
       await supabase.from("clicks").insert([{
@@ -420,23 +511,32 @@ export default function Home() {
         email: user ? user.email : "guest"
       }]);
       setClickCount(c => c + 1);
-    } catch(e) {}
+    } catch (e) {}
   };
 
-  // === NEW: DAILY COIN CLAIM ===
   const claimCoins = async () => {
-    if(!user) return notify("Pehle Login karo!", "error");
-    const today = new Date().toISOString().slice(0,10);
-    const lastClaim = localStorage.getItem("bazaru_last_claim");
-    if(lastClaim === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+    if (!user) return notify("Pehle Login karo!", "error");
+    const today = new Date().toISOString().slice(0, 10);
+    const { data } = await supabase.from("coin_claims").select("id").eq("email", user.email).eq("claim_date", today).limit(1);
+    if (data && data.length > 0) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+    const newTotal = (coins || 0) + 10;
     try {
       await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
-    } catch(e) { console.log("coin db error", e); }
-    const total = coins + 10;
-    setCoins(total);
-    localStorage.setItem("bazaru_coins", String(total));
-    localStorage.setItem("bazaru_last_claim", today);
+      await supabase.from("profiles").update({ coins: newTotal }).eq("id", user.id);
+    } catch (e) { console.log("coin db error", e); }
+    setCoins(newTotal);
     notify("🎉 +10 Coins Claim Ho Gaye!");
+  };
+
+  const redeemCoins = async (need, reward) => {
+    if (!user) return notify("Pehle Login karo!", "error");
+    if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
+    const total = coins - need;
+    setCoins(total);
+    if (user?.id) await supabase.from("profiles").update({ coins: total }).eq("id", user.id);
+    const code = "BAZARU" + need + Math.floor(Math.random() * 900 + 100);
+    notify(`🎉 Code mil gaya: ${code} - ${reward}`);
+    navigator.clipboard?.writeText(code);
   };
 
   const addProduct = async () => {
@@ -456,7 +556,6 @@ export default function Home() {
     };
 
     const { data, error } = await supabase.from("products").insert([p]).select().single();
-
     if (error) return notify("Supabase Error: " + error.message, "error");
 
     setProducts([data, ...products]);
@@ -464,7 +563,6 @@ export default function Home() {
     notify("Product Supabase me add ho gaya ✅");
   };
 
-  // === ADMIN SLIDER ADD ===
   const addSlider = async () => {
     if (!newSlide.title) return notify("Slider title likho", "error");
     const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
@@ -477,17 +575,6 @@ export default function Home() {
     await supabase.from("sliders").delete().eq("id", id);
     setSlides(slides.filter(s => s.id !== id));
     notify("Slider delete ho gaya", "error");
-  };
-
-  // === COIN SHOP REDEEM ===
-  const redeemCoins = (need, reward) => {
-    if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
-    const total = coins - need;
-    setCoins(total);
-    localStorage.setItem("bazaru_coins", String(total));
-    const code = "BAZARU" + need + Math.floor(Math.random()*900+100);
-    notify(`🎉 Code mil gaya: ${code} - ${reward}`);
-    navigator.clipboard?.writeText(code);
   };
 
   const deleteProduct = async (id) => {
@@ -611,7 +698,6 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* HERO SLIDER - AB SUPABASE SE */}
               <div className="bz-hero" style={{ backgroundImage: currentSlide.bg }}>
                 <div className="bz-hero-content" key={slide}>
                   <h1>{currentSlide.title}</h1>
@@ -628,7 +714,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* SECTION HEAD */}
               <div className="bz-section-head">
                 <div>
                   <h2>🔥 Trending Deals</h2>
@@ -645,7 +730,6 @@ export default function Home() {
                 </select>
               </div>
 
-              {/* PRODUCT GRID */}
               {loading ? (
                 <div className="bz-empty">
                   <div className="bz-spinner" />
@@ -710,7 +794,6 @@ export default function Home() {
                 </div>
               )}
 
-              {/* TRUST FEATURES */}
               <div className="bz-features">
                 <div className="bz-feature"><span className="bz-feature-icon">🚚</span><div><b>Free Delivery</b><small>On orders above ₹499</small></div></div>
                 <div className="bz-feature"><span className="bz-feature-icon">🔄</span><div><b>7-Day Returns</b><small>Easy partner returns</small></div></div>
@@ -746,7 +829,7 @@ export default function Home() {
               <button className="bz-flink" onClick={() => goTo("about")}>About Us</button>
               <button className="bz-flink" onClick={() => goTo("contact")}>Contact Us</button>
               <button className="bz-flink" onClick={() => goTo("disclaimer")}>Affiliate Disclosure</button>
-              <button className="bz-flink" onClick={() => setShowAdmin(true)}>Admin Panel</button>
+              <button className="bz-flink" onClick={() => handleAdminOpen()}>Admin Panel</button>
             </div>
 
             <div>
@@ -835,7 +918,7 @@ export default function Home() {
               <button className="bz-menu-link" onClick={() => goTo("shipping")}><span>🚚</span>Shipping Policy</button>
 
               <div className="bz-drawer-title">Admin</div>
-              <button className="bz-menu-link" onClick={() => { setMenuOpen(false); setShowAdmin(true); }}><span>⚙️</span>Admin Panel</button>
+              <button className="bz-menu-link" onClick={() => { setMenuOpen(false); handleAdminOpen(); }}><span>⚙️</span>Admin Panel</button>
             </aside>
           </>
         )}
@@ -994,169 +1077,186 @@ export default function Home() {
 
         {/* ================= LOGIN MODAL ================= */}
         {showLogin && (
-  <div className="bz-modal" onClick={() => setShowLogin(false)}>
-    <div className="bz-modal-card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
-      <div style={{ padding: 28 }}>
-        <div style={{ textAlign: "center", marginBottom: 18 }}>
-          <div style={{ fontSize: 42 }}>👋</div>
-          <h2 style={{ fontSize: 20, fontWeight: 800 }}>Welcome to BAZARU</h2>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Login to save your cart & wishlist</p>
-        </div>
-        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
-          {["login","signup","forgot"].map(m => (
-            <button key={m} onClick={()=>setAuthMode(m)} style={{ flex:1, padding: "9px", borderRadius: 9, background: authMode===m ? "#7c3aed" : "#f1f5f9", color: authMode===m ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{m==="forgot" ? "Forgot?" : m}</button>
-          ))}
-        </div>
-        <input className="bz-input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" type="email" />
-        {authMode!=="forgot" && <input className="bz-input" style={{ marginTop: 10 }} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password (min 6)" />}
-        {authMode==="login" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAuthLogin}>{authLoading ? "Checking..." : "LOGIN"}</button>}
-        {authMode==="signup" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleSignup}>{authLoading ? "Creating..." : "CREATE ACCOUNT"}</button>}
-        {authMode==="forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK 📧</button>}
-        {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
-          <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
-          <input className="bz-input" type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Naya Password" />
-          <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
-        </div>}
-        <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>Cancel</button>
-      </div>
-    </div>
-  </div>
-)}
-        {/* ================= ADMIN MODAL ================= */}
-         {/* ================= ADMIN MODAL ================= */}
-{showAdmin && (
-  <div className="bz-modal" onClick={() => setShowAdmin(false)}>
-    <div className="bz-modal-card" style={{ maxWidth: 660 }} onClick={e => e.stopPropagation()}>
-      <div className="bz-drawer-head">
-        <h3>⚙️ Admin Panel - {user?.email}</h3>
-        <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
-      </div>
-      <div style={{ padding: 22 }}>
-        {!isAdmin ? (
-          <div style={{ textAlign: "center", padding: 20 }}>
-            <p style={{ fontSize: 14, fontWeight: 800 }}>Sirf Admin khol sakta hai!</p>
-            <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Pehle run4ravish@gmail.com se Login karo, fir Admin khulega.</p>
-          </div>
-        ) : (
-          <div>
-            <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-              {["products","users","sliders"].map(t => (
-                <button key={t} onClick={()=>{setAdminTab(t); if(t==="users") loadAllUsers();}} style={{ flex:1, padding: "9px", borderRadius: 9, background: adminTab===t ? "#7c3aed" : "#f1f5f9", color: adminTab===t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
-              ))}
-            </div>
-
-            {adminTab === "users" && (
-              <div>
-                <input className="bz-input" value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
-                {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
-                  <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.role==="admin" ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
-                    <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>toggleBlock(u)}>{u.is_blocked ? "UNBLOCK" : "BLOCK"}</button>
-                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>addCoinsToUser(u, 50)}>+50 🪙</button>
-                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>addCoinsToUser(u, -50)}>-50 🪙</button>
-                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>toggleAdminRole(u)}>{u.role==="admin" ? "Remove Admin" : "Make Admin"}</button>
-                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11, color: "#dc2626" }} onClick={()=>deleteUserProfile(u)}>DELETE</button>
-                    </div>
-                  </div>
-                ))}
-                {allUsers.length===0 && <p style={{ fontSize: 13, color: "#64748b" }}>Koi user nahi mila. Pehle koi Signup karega tab dikhega.</p>}
-              </div>
-            )}
-
-            {adminTab === "products" && (
-              <div>
-                <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
-                  <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-                    <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
-                    <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
-                    <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
-                      <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
-                    </select>
-                  </div>
-                  <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
-                  <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
-                  <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
+          <div className="bz-modal" onClick={() => setShowLogin(false)}>
+            <div className="bz-modal-card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: 28 }}>
+                <div style={{ textAlign: "center", marginBottom: 18 }}>
+                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>👋</div>
+                  <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Welcome to BAZARU</h2>
+                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
+                    Login to save your cart & wishlist
+                  </p>
                 </div>
-                <h4 style={{ fontSize: 14, fontWeight: 800, margin: "18px 0 8px" }}>All Products ({products.length})</h4>
-                {products.slice(0,20).map(p => (
-                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", padding: "8px 0", fontSize: 13 }}>
-                    <span style={{ flex: 1 }}>{p.title.slice(0,40)}</span>
-                    <b style={{ margin: "0 10px" }}>₹{p.price}</b>
-                    <button style={{ color: "#dc2626", fontWeight: 800, fontSize: 12 }} onClick={()=>deleteProduct(p.id)}>Hide</button>
-                  </div>
-                ))}
-              </div>
-            )}
 
-            {adminTab === "sliders" && (
-              <div>
-                <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>🎠 Add New Slider</h4>
-                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                  <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title" />
-                  <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle" />
-                  <div style={{ display: "flex", gap: 9 }}>
-                    <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
-                    <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
-                  </div>
-                  <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
-                    <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
-                    <option value="linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)">Blue Purple</option>
-                    <option value="linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)">Orange Pink</option>
-                    <option value="linear-gradient(135deg,#16a34a 0%,#059669 50%,#0d9488 100%)">Green</option>
-                    <option value="linear-gradient(135deg,#dc2626 0%,#ea580c 50%,#f59e0b 100%)">Red Orange</option>
-                  </select>
-                  <button className="bz-primary" onClick={addSlider}>+ ADD SLIDER</button>
-                </div>
-                <div style={{ marginTop: 14 }}>
-                  {slides.map(s => (
-                    <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
-                      <span>{s.emoji} {s.title}</span>
-                      <button style={{ color: "#dc2626", fontWeight: 800 }} onClick={()=>deleteSlider(s.id)}>Delete</button>
-                    </div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                  {["login", "signup", "forgot"].map(m => (
+                    <button key={m} onClick={() => setAuthMode(m)} style={{ flex: 1, padding: "9px", borderRadius: 9, background: authMode === m ? "#7c3aed" : "#f1f5f9", color: authMode === m ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{m === "forgot" ? "Forgot?" : m}</button>
                   ))}
                 </div>
+
+                <input className="bz-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" />
+                {authMode !== "forgot" && <input className="bz-input" style={{ marginTop: 10 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password (min 6)" />}
+                {authMode === "login" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAuthLogin}>{authLoading ? "Checking..." : "LOGIN"}</button>}
+                {authMode === "signup" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleSignup}>{authLoading ? "Creating..." : "CREATE ACCOUNT"}</button>}
+                {authMode === "forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK 📧</button>}
+
+                {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
+                  <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
+                  <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Naya Password" />
+                  <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
+                </div>}
+
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>
+                  Cancel
+                </button>
               </div>
-            )}
+            </div>
           </div>
         )}
-      </div>
-    </div>
-  </div>
-)}
 
-{/* ================= COIN SHOP MODAL ================= */}
-{showCoinShop && (
-  <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
-    <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-      <div style={{ padding: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 48 }}>🪙</div>
-        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
-        <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
-        <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
-        <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
-        <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
-            <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
-            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
+        {/* ================= ADMIN MODAL ================= */}
+        {showAdmin && (
+          <div className="bz-modal" onClick={() => setShowAdmin(false)}>
+            <div className="bz-modal-card" style={{ maxWidth: 660 }} onClick={e => e.stopPropagation()}>
+              <div className="bz-drawer-head">
+                <h3>⚙️ Admin Panel - {user?.email}</h3>
+                <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
+              </div>
+
+              <div style={{ padding: 22 }}>
+                {!isAdmin ? (
+                  <div style={{ textAlign: "center", padding: 20 }}>
+                    <p style={{ fontSize: 14, fontWeight: 800 }}>Sirf Admin khol sakta hai!</p>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Pehle run4ravish@gmail.com se Login karo, fir Admin khulega.</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                      {["products", "users", "sliders"].map(t => (
+                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); }} style={{ flex: 1, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
+                      ))}
+                    </div>
+
+                    {/* === PRODUCTS TAB === */}
+                    {adminTab === "products" && (
+                      <div>
+                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                          <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
+                          <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
+                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
+                            <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
+                              <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
+                            </select>
+                          </div>
+                          <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
+                          <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
+                          <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
+                        </div>
+
+                        <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>📦 Manage Products ({products.length})</h4>
+                        <div style={{ maxHeight: 300, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          {products.map(p => (
+                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                              <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0 }}>{p.title} — <b>₹{p.price}</b></span>
+                              <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteProduct(p.id)}>Delete</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* === USERS TAB === */}
+                    {adminTab === "users" && (
+                      <div>
+                        <input className="bz-input" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
+                        {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                          <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.role === "admin" ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
+                            <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => toggleBlock(u)}>{u.is_blocked ? "UNBLOCK" : "BLOCK"}</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => toggleAdminRole(u)}>{u.role === "admin" ? "Remove Admin" : "Make Admin"}</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11, color: "#dc2626" }} onClick={() => deleteUserProfile(u)}>DELETE</button>
+                            </div>
+                          </div>
+                        ))}
+                        {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>Koi user nahi mila. Pehle koi Signup karega tab dikhega.</p>}
+                      </div>
+                    )}
+
+                    {/* === SLIDERS TAB === */}
+                    {adminTab === "sliders" && (
+                      <div>
+                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>🎠 Add New Slider</h4>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                          <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title" />
+                          <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle" />
+                          <div style={{ display: "flex", gap: 9 }}>
+                            <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
+                            <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
+                          </div>
+                          <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
+                            <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
+                            <option value="linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)">Blue Purple</option>
+                            <option value="linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)">Orange Pink</option>
+                            <option value="linear-gradient(135deg,#16a34a 0%,#059669 50%,#0d9488 100%)">Green</option>
+                            <option value="linear-gradient(135deg,#dc2626 0%,#ea580c 50%,#f59e0b 100%)">Red Orange</option>
+                          </select>
+                          <button className="bz-primary" onClick={addSlider}>+ ADD SLIDER</button>
+                        </div>
+                        <div style={{ maxHeight: 220, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12, marginTop: 10 }}>
+                          {slides.map(s => (
+                            <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                              <span style={{ fontSize: 18 }}>{s.emoji}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{s.title}</span>
+                              <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteSlider(s.id)}>Delete</button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
-            <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
-            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
+        )}
+
+        {/* ================= COIN SHOP MODAL ================= */}
+        {showCoinShop && (
+          <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
+            <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: 24, textAlign: "center" }}>
+                <div style={{ fontSize: 48 }}>🪙</div>
+                <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
+                <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
+                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
+                <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
+                <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
+                  </div>
+                </div>
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
+              </div>
+            </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
-            <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
-            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
-          </div>
-        </div>
-        <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
-      </div>
-    </div>
-  </div>
-)}
+        )}
+
         {/* ================= TOAST ================= */}
         {toast && (
           <div key={toast.id} className={`bz-toast ${toast.type}`}>
