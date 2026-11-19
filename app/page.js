@@ -286,8 +286,8 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [toast, setToast] = useState(null);
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
- const [showCoinShop, setShowCoinShop] = useState(false);
-const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
+  const [showCoinShop, setShowCoinShop] = useState(false);
+  const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
   // === NEW: 3 TABLES ===
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
@@ -360,7 +360,7 @@ const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", 
   }, [toast]);
 
   /* ---------- SCROLL LOCK ---------- */
-  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || !!selected;
+  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || !!selected;
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.style.overflow = anyOpen ? "hidden" : "";
@@ -424,19 +424,19 @@ const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", 
 
   // === NEW: DAILY COIN CLAIM ===
   const claimCoins = async () => {
-  if(!user) return notify("Pehle Login karo!", "error");
-  const today = new Date().toISOString().slice(0,10);
-  const lastClaim = localStorage.getItem("bazaru_last_claim");
-  if(lastClaim === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
-  try {
-    await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
-  } catch(e) { console.log("coin db error", e); }
-  const total = coins + 10;
-  setCoins(total);
-  localStorage.setItem("bazaru_coins", String(total));
-  localStorage.setItem("bazaru_last_claim", today);
-  notify("🎉 +10 Coins Claim Ho Gaye!");
-};
+    if(!user) return notify("Pehle Login karo!", "error");
+    const today = new Date().toISOString().slice(0,10);
+    const lastClaim = localStorage.getItem("bazaru_last_claim");
+    if(lastClaim === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+    try {
+      await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
+    } catch(e) { console.log("coin db error", e); }
+    const total = coins + 10;
+    setCoins(total);
+    localStorage.setItem("bazaru_coins", String(total));
+    localStorage.setItem("bazaru_last_claim", today);
+    notify("🎉 +10 Coins Claim Ho Gaye!");
+  };
 
   const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
@@ -462,32 +462,33 @@ const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", 
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
     notify("Product Supabase me add ho gaya ✅");
   };
-// === ADMIN SLIDER ADD ===
-const addSlider = async () => {
-  if (!newSlide.title) return notify("Slider title likho", "error");
-  const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
-  if (error) return notify("Error: " + error.message, "error");
-  setSlides([...slides, data]);
-  setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
-  notify("Slider add ho gaya ✅");
-};
-const deleteSlider = async (id) => {
-  await supabase.from("sliders").delete().eq("id", id);
-  setSlides(slides.filter(s => s.id !== id));
-  notify("Slider delete ho gaya", "error");
-};
 
-// === COIN SHOP REDEEM ===
-const redeemCoins = (need, reward) => {
-  if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
-  const total = coins - need;
-  setCoins(total);
-  localStorage.setItem("bazaru_coins", String(total));
-  const code = "BAZARU" + need + Math.floor(Math.random()*900+100);
-  notify(`🎉 Code mil gaya: ${code} - ${reward}`);
-  navigator.clipboard?.writeText(code);
-};
-  
+  // === ADMIN SLIDER ADD ===
+  const addSlider = async () => {
+    if (!newSlide.title) return notify("Slider title likho", "error");
+    const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
+    if (error) return notify("Error: " + error.message, "error");
+    setSlides([...slides, data]);
+    setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
+    notify("Slider add ho gaya ✅");
+  };
+  const deleteSlider = async (id) => {
+    await supabase.from("sliders").delete().eq("id", id);
+    setSlides(slides.filter(s => s.id !== id));
+    notify("Slider delete ho gaya", "error");
+  };
+
+  // === COIN SHOP REDEEM ===
+  const redeemCoins = (need, reward) => {
+    if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
+    const total = coins - need;
+    setCoins(total);
+    localStorage.setItem("bazaru_coins", String(total));
+    const code = "BAZARU" + need + Math.floor(Math.random()*900+100);
+    notify(`🎉 Code mil gaya: ${code} - ${reward}`);
+    navigator.clipboard?.writeText(code);
+  };
+
   const deleteProduct = async (id) => {
     await supabase.from("products").update({ is_active: false }).eq("id", id);
     setProducts(products.filter(x => x.id !== id));
@@ -553,7 +554,7 @@ const redeemCoins = (need, reward) => {
             </div>
 
             <div className="bz-header-actions">
-              <button className="bz-icon-btn" onClick={claimCoins}>
+              <button className="bz-icon-btn" onClick={() => setShowCoinShop(true)}>
                 <span style={{ fontSize: 15 }}>🪙</span>
                 <span>{coins}</span>
               </button>
@@ -1066,6 +1067,33 @@ const redeemCoins = (need, reward) => {
                       <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                     </div>
 
+                    <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>🎠 Add New Slider</h4>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                      <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title - jaise Big Sale Live!" />
+                      <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle - Up to 80% Off" />
+                      <div style={{ display: "flex", gap: 9 }}>
+                        <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
+                        <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
+                      </div>
+                      <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
+                        <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
+                        <option value="linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)">Blue Purple</option>
+                        <option value="linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)">Orange Pink</option>
+                        <option value="linear-gradient(135deg,#16a34a 0%,#059669 50%,#0d9488 100%)">Green</option>
+                        <option value="linear-gradient(135deg,#dc2626 0%,#ea580c 50%,#f59e0b 100%)">Red Orange</option>
+                      </select>
+                      <button className="bz-primary" onClick={addSlider}>+ ADD SLIDER</button>
+                    </div>
+                    <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12, marginTop: 10 }}>
+                      {slides.map(s => (
+                        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                          <span style={{ fontSize: 18 }}>{s.emoji}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{s.title}</span>
+                          <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteSlider(s.id)}>Delete</button>
+                        </div>
+                      ))}
+                    </div>
+
                     <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>
                       📦 Manage Products ({products.length})
                     </h4>
@@ -1092,6 +1120,65 @@ const redeemCoins = (need, reward) => {
           </div>
         )}
 
+        {/* ================= COIN SHOP MODAL ================= */}
+        {showCoinShop && (
+          <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
+            <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: 24, textAlign: "center" }}>
+                <div style={{ fontSize: 48 }}>🪙</div>
+                <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
+                <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
+                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
+                <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
+                <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
+                    <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
+                  </div>
+                </div>
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+{/* ================= COIN SHOP MODAL ================= */}
+{showCoinShop && (
+  <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
+    <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+      <div style={{ padding: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 48 }}>🪙</div>
+        <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
+        <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
+        <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
+        <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
+        <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
+            <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
+            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
+            <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
+            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
+            <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
+            <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
+          </div>
+        </div>
+        <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
+      </div>
+    </div>
+  </div>
+)}
         {/* ================= TOAST ================= */}
         {toast && (
           <div key={toast.id} className={`bz-toast ${toast.type}`}>
