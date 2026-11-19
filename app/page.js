@@ -526,7 +526,7 @@ export default function Home() {
             <div className="bz-header-actions">
               <button className="bz-icon-btn" onClick={claimCoins}>
                 <span style={{ fontSize: 15 }}>🪙</span>
-                <span className="bz-hide-sm">{coins} Coins</span>
+                <span>{coins}</span>
               </button>
               <button className="bz-icon-btn" onClick={() => (user ? logout() : setShowLogin(true))}>
                 <span style={{ fontSize: 15 }}>👤</span>
