@@ -70,6 +70,7 @@ const CSS = `
 @keyframes bzToast{from{opacity:0;transform:translate(-50%,22px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes bzShine{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 @keyframes bzPulseGlow{0%,100%{filter:drop-shadow(0 2px 8px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 2px 14px rgba(236,72,153,.7))}}
+@keyframes bzSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
 /* ---------- HEADER ---------- */
 .bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 45%,#db2777 100%);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.4)}
@@ -190,6 +191,7 @@ const CSS = `
 .bz-empty div{font-size:56px;animation:bzFloat 3s ease-in-out infinite}
 .bz-empty h4{font-size:16px;font-weight:800}
 .bz-empty p{font-size:13px;color:#94a3b8;font-weight:600}
+.bz-spinner{width:52px;height:52px;border-radius:50%;border:4px solid #e9d5ff;border-top-color:#a855f7;animation:bzSpin .8s linear infinite}
 
 /* ---------- MODAL ---------- */
 .bz-modal{position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);animation:bzFade .2s ease}
@@ -263,6 +265,7 @@ const CSS = `
 ============================================================ */
 export default function Home() {
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [cat, setCat] = useState("All");
   const [sort, setSort] = useState("popular");
@@ -284,11 +287,29 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
 
-  /* ---------- INIT ---------- */
+  /* ---------- INIT - SUPABASE SE LOAD ---------- */
   useEffect(() => {
+    const loadProducts = async () => {
+      setLoading(true);
+      // YAHI TUMHARI WALI QUERY HAI
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        setProducts(data);
+      } else {
+        // Agar Supabase khali hai ya error hai, to default wale dikhao
+        setProducts(DEFAULT_PRODUCTS);
+        if (error) console.log("Supabase Error:", error.message);
+      }
+      setLoading(false);
+    };
+    loadProducts();
+
     try {
-      const sp = localStorage.getItem("bazaru_products_v2");
-      if (sp) setProducts(JSON.parse(sp));
       const su = localStorage.getItem("bazaru_user");
       if (su) setUser(JSON.parse(su));
       const sc = localStorage.getItem("bazaru_cart_v2");
@@ -338,7 +359,6 @@ export default function Home() {
   /* ---------- HELPERS ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  const saveProducts = (list) => { setProducts(list); localStorage.setItem("bazaru_products_v2", JSON.stringify(list)); };
   const saveCart = (list) => { setCart(list); localStorage.setItem("bazaru_cart_v2", JSON.stringify(list)); };
   const saveWish = (list) => { setWishlist(list); localStorage.setItem("bazaru_wish", JSON.stringify(list)); };
 
@@ -379,11 +399,11 @@ export default function Home() {
     else notify("Wrong password! Default: admin123", "error");
   };
 
-  const addProduct = () => {
+  const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
     const slug = newProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
     const p = {
-      id: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()),
       title: newProd.title,
       slug,
       price: Number(newProd.price),
@@ -394,9 +414,22 @@ export default function Home() {
       affiliate_url: newProd.affiliate_url || "#",
       is_active: true,
     };
-    saveProducts([p, ...products]);
+
+    // Supabase me daalo
+    const { data, error } = await supabase.from("products").insert([p]).select().single();
+
+    if (error) return notify("Supabase Error: " + error.message, "error");
+
+    setProducts([data, ...products]);
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
-    notify("Product added ✅");
+    notify("Product Supabase me add ho gaya ✅");
+  };
+
+  const deleteProduct = async (id) => {
+    // Supabase me is_active false karo - delete nahi, bas hide karo
+    await supabase.from("products").update({ is_active: false }).eq("id", id);
+    setProducts(products.filter(x => x.id !== id));
+    notify("Product hide ho gaya", "error");
   };
 
   const checkout = () => {
@@ -530,7 +563,9 @@ export default function Home() {
               <div className="bz-section-head">
                 <div>
                   <h2>🔥 Trending Deals</h2>
-                  <span className="bz-count">{filtered.length} products found</span>
+                  <span className="bz-count">
+                    {loading ? "Loading deals..." : `${filtered.length} products found`}
+                  </span>
                 </div>
                 <select className="bz-select" value={sort} onChange={e => setSort(e.target.value)}>
                   <option value="popular">Popularity</option>
@@ -542,7 +577,13 @@ export default function Home() {
               </div>
 
               {/* PRODUCT GRID */}
-              {filtered.length === 0 ? (
+              {loading ? (
+                <div className="bz-empty">
+                  <div className="bz-spinner" />
+                  <h4>Products Loading...</h4>
+                  <p>Supabase se deals aa rahe hai</p>
+                </div>
+              ) : filtered.length === 0 ? (
                 <div className="bz-empty">
                   <div>🔍</div>
                   <h4>No products found</h4>
@@ -970,7 +1011,7 @@ export default function Home() {
                           </span>
                           <button
                             style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }}
-                            onClick={() => { saveProducts(products.filter(x => x.id !== p.id)); notify("Product deleted", "error"); }}
+                            onClick={() => deleteProduct(p.id)}
                           >
                             Delete
                           </button>
