@@ -286,12 +286,15 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [toast, setToast] = useState(null);
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
+  // === NEW: 3 TABLES ===
+  const [slides, setSlides] = useState(SLIDES);
+  const [coins, setCoins] = useState(0);
+  const [clickCount, setClickCount] = useState(0);
 
   /* ---------- INIT - SUPABASE SE LOAD ---------- */
   useEffect(() => {
     const loadProducts = async () => {
       setLoading(true);
-      // YAHI TUMHARI WALI QUERY HAI
       const { data, error } = await supabase
         .from("products")
         .select("*")
@@ -301,13 +304,17 @@ export default function Home() {
       if (!error && data && data.length > 0) {
         setProducts(data);
       } else {
-        // Agar Supabase khali hai ya error hai, to default wale dikhao
         setProducts(DEFAULT_PRODUCTS);
         if (error) console.log("Supabase Error:", error.message);
       }
       setLoading(false);
     };
     loadProducts();
+
+    // Sliders Supabase se
+    supabase.from("sliders").select("*").eq("is_active", true).order("created_at", { ascending: true }).then(({data}) => {
+      if(data && data.length > 0) setSlides(data);
+    });
 
     try {
       const su = localStorage.getItem("bazaru_user");
@@ -316,6 +323,8 @@ export default function Home() {
       if (sc) setCart(JSON.parse(sc).map(c => ({ ...c, qty: c.qty || 1 })));
       const sw = localStorage.getItem("bazaru_wish");
       if (sw) setWishlist(JSON.parse(sw));
+      const savedCoins = localStorage.getItem("bazaru_coins");
+      if(savedCoins) setCoins(Number(savedCoins));
     } catch (e) {}
   }, []);
 
@@ -337,9 +346,9 @@ export default function Home() {
 
   /* ---------- HERO AUTO SLIDE ---------- */
   useEffect(() => {
-    const t = setInterval(() => setSlide(s => (s + 1) % SLIDES.length), 4200);
+    const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 4200);
     return () => clearInterval(t);
-  }, []);
+  }, [slides.length]);
 
   /* ---------- TOAST AUTO HIDE ---------- */
   useEffect(() => {
@@ -399,6 +408,32 @@ export default function Home() {
     else notify("Wrong password! Default: admin123", "error");
   };
 
+  // === NEW: BUY NOW CLICK TRACK ===
+  const handleBuyClick = async (p) => {
+    try {
+      await supabase.from("clicks").insert([{
+        product_id: p.id,
+        product_title: p.title,
+        email: user ? user.email : "guest"
+      }]);
+      setClickCount(c => c + 1);
+    } catch(e) {}
+  };
+
+  // === NEW: DAILY COIN CLAIM ===
+  const claimCoins = async () => {
+    if(!user) return notify("Pehle Login karo!", "error");
+    const today = new Date().toISOString().slice(0,10);
+    const { data } = await supabase.from("coin_claims").select("*").eq("email", user.email).eq("claim_date", today);
+    if(data && data.length > 0) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+    const { error } = await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
+    if(error) return notify("Try again", "error");
+    const total = coins + 10;
+    setCoins(total);
+    localStorage.setItem("bazaru_coins", String(total));
+    notify("🎉 +10 Coins Claim Ho Gaye!");
+  };
+
   const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
     const slug = newProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -415,7 +450,6 @@ export default function Home() {
       is_active: true,
     };
 
-    // Supabase me daalo
     const { data, error } = await supabase.from("products").insert([p]).select().single();
 
     if (error) return notify("Supabase Error: " + error.message, "error");
@@ -426,7 +460,6 @@ export default function Home() {
   };
 
   const deleteProduct = async (id) => {
-    // Supabase me is_active false karo - delete nahi, bas hide karo
     await supabase.from("products").update({ is_active: false }).eq("id", id);
     setProducts(products.filter(x => x.id !== id));
     notify("Product hide ho gaya", "error");
@@ -456,6 +489,7 @@ export default function Home() {
   }, [products, cat, search, sort]);
 
   const off = (p) => Math.round((1 - p.price / p.mrp) * 100);
+  const currentSlide = slides[slide % slides.length] || SLIDES[0];
 
   /* ============================================================
      RENDER
@@ -490,6 +524,10 @@ export default function Home() {
             </div>
 
             <div className="bz-header-actions">
+              <button className="bz-icon-btn" onClick={claimCoins}>
+                <span style={{ fontSize: 15 }}>🪙</span>
+                <span className="bz-hide-sm">{coins} Coins</span>
+              </button>
               <button className="bz-icon-btn" onClick={() => (user ? logout() : setShowLogin(true))}>
                 <span style={{ fontSize: 15 }}>👤</span>
                 <span className="bz-hide-sm">{user ? user.name : "Login"}</span>
@@ -542,18 +580,18 @@ export default function Home() {
             </div>
           ) : (
             <>
-              {/* HERO SLIDER */}
-              <div className="bz-hero" style={{ backgroundImage: SLIDES[slide].bg }}>
+              {/* HERO SLIDER - AB SUPABASE SE */}
+              <div className="bz-hero" style={{ backgroundImage: currentSlide.bg }}>
                 <div className="bz-hero-content" key={slide}>
-                  <h1>{SLIDES[slide].title}</h1>
-                  <p>{SLIDES[slide].sub}</p>
+                  <h1>{currentSlide.title}</h1>
+                  <p>{currentSlide.sub}</p>
                   <button className="bz-ghost" style={{ background: "#fff", color: "#4f46e5", border: "none", fontWeight: 800 }} onClick={() => document.querySelector(".bz-grid")?.scrollIntoView({ behavior: "smooth" })}>
-                    {SLIDES[slide].cta} →
+                    {currentSlide.cta} →
                   </button>
                 </div>
-                <div className="bz-hero-emoji">{SLIDES[slide].emoji}</div>
+                <div className="bz-hero-emoji">{currentSlide.emoji}</div>
                 <div className="bz-hero-dots">
-                  {SLIDES.map((_, i) => (
+                  {slides.map((_, i) => (
                     <span key={i} className={`bz-dot ${i === slide ? "active" : ""}`} onClick={() => setSlide(i)} />
                   ))}
                 </div>
@@ -633,7 +671,7 @@ export default function Home() {
 
                         <div className="bz-card-actions">
                           <button className="bz-btn-cart" onClick={() => addToCart(p)}>ADD TO CART</button>
-                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer">BUY NOW</a>
+                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={() => handleBuyClick(p)}>BUY NOW</a>
                         </div>
                       </div>
                     </div>
@@ -912,7 +950,7 @@ export default function Home() {
 
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
-                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer">BUY NOW →</a>
+                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={() => handleBuyClick(selected)}>BUY NOW →</a>
                 </div>
 
                 <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
