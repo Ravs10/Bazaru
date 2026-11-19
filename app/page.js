@@ -5,18 +5,11 @@ import { useState, useEffect, useMemo } from "react";
    DATA
 ============================================================ */
 const DEFAULT_PRODUCTS = [
-  { id: 1, title: "Wireless Bluetooth Earbuds - Black", price: 499, old: 1999, rating: 4.3, reviews: 12450, cat: "Mobiles", img: "🎧", link: "https://earn-karo.com/your-link-1", desc: "True wireless earbuds with 32H playtime, Bluetooth 5.3, noise cancellation and built-in mic." },
-  { id: 2, title: "Men's Stylish Cotton T-Shirt", price: 299, old: 999, rating: 4.1, reviews: 8930, cat: "Fashion", img: "👕", link: "https://earn-karo.com/your-link-2", desc: "Premium cotton, regular fit, comfortable for daily wear." },
-  { id: 3, title: "Smart Watch with Fitness Tracker", price: 999, old: 3999, rating: 4.5, reviews: 23400, cat: "Electronics", img: "⌚", link: "https://earn-karo.com/your-link-3", desc: "1.85 inch HD display, heart rate, SpO2, sleep tracking, 7 days battery backup." },
-  { id: 4, title: "Women's Kurti - Beautiful Design", price: 449, old: 1499, rating: 4.2, reviews: 6700, cat: "Fashion", img: "👗", link: "https://earn-karo.com/your-link-4", desc: "Elegant printed kurti, soft fabric, perfect for festive and daily wear." },
-  { id: 5, title: "Air Fryer - Healthy Cooking 4L", price: 2499, old: 5999, rating: 4.4, reviews: 9800, cat: "Home", img: "🍳", link: "https://earn-karo.com/your-link-5", desc: "Oil-free cooking, 8 preset modes, 4L capacity for the full family." },
-  { id: 6, title: "Face Wash + Serum Combo Pack", price: 349, old: 899, rating: 4.0, reviews: 4500, cat: "Beauty", img: "🧴", link: "https://earn-karo.com/your-link-6", desc: "Vitamin C face wash + Hyaluronic serum for glowing skin." },
-  { id: 7, title: "Running Sports Shoes - Lightweight", price: 799, old: 2499, rating: 4.3, reviews: 15200, cat: "Fashion", img: "👟", link: "https://earn-karo.com/your-link-7", desc: "Ultra-light, breathable mesh, anti-skid sole for running & gym." },
-  { id: 8, title: "Bluetooth Speaker - Bass Boost", price: 899, old: 2999, rating: 4.6, reviews: 31200, cat: "Electronics", img: "🔊", link: "https://earn-karo.com/your-link-8", desc: "16W speaker, deep bass, 12H battery, waterproof IPX5." },
-  { id: 9, title: "RGB Gaming Mouse - 6 DPI Modes", price: 599, old: 1799, rating: 4.2, reviews: 5400, cat: "Electronics", img: "🖱️", link: "https://earn-karo.com/your-link-9", desc: "Ergonomic RGB gaming mouse with adjustable DPI and braided cable." },
-  { id: 10, title: "Stainless Steel Water Bottle 1L", price: 399, old: 999, rating: 4.1, reviews: 7200, cat: "Home", img: "🍶", link: "https://earn-karo.com/your-link-10", desc: "Leak-proof, BPA free, keeps water cold for 24 hours." },
-  { id: 11, title: "Women's Leather Handbag", price: 899, old: 2999, rating: 4.4, reviews: 3100, cat: "Fashion", img: "👜", link: "https://earn-karo.com/your-link-11", desc: "Premium PU leather handbag with spacious compartments." },
-  { id: 12, title: "Anti-Slip Yoga Mat 6mm", price: 549, old: 1499, rating: 4.3, reviews: 2600, cat: "Home", img: "🧘", link: "https://earn-karo.com/your-link-12", desc: "Extra thick anti-slip yoga mat with carry strap." },
+  { id: "c09fbc05-5369-48c8-9c3c-b47cde236c7b", title: "Wireless Bluetooth Earbuds", slug: "wireless-bluetooth-earbuds", price: 999, mrp: 2999, image: "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=800", category: "Electronics", rating: "4.5", affiliate_url: "https://www.amazon.in/dp/B0CXYZ123", is_active: true },
+  { id: "39e156f9-cb62-46c5-b622-8b81d2bcd23b", title: "Smart Watch with Fitness Tracker", slug: "smart-watch-fitness", price: 1499, mrp: 4999, image: "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=800", category: "Electronics", rating: "4.4", affiliate_url: "https://www.amazon.in/dp/B0CXYZ124", is_active: true },
+  { id: "6692f0fe-297a-42c5-9894-3c0dc4c39461", title: "Men Casual Shirt", slug: "men-casual-shirt", price: 599, mrp: 1499, image: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800", category: "Fashion", rating: "4.3", affiliate_url: "https://www.amazon.in/dp/B0CXYZ125", is_active: true },
+  { id: "ec17db71-6365-4040-b2cb-30cadcdf9aa4", title: "Women Kurti Set", slug: "women-kurti-set", price: 799, mrp: 1999, image: "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=800", category: "Fashion", rating: "4.6", affiliate_url: "https://www.amazon.in/dp/B0CXYZ126", is_active: true },
+  { id: "b8015a8c-e213-4019-befa-1727cbfe866b", title: "Stainless Steel Water Bottle 1L", slug: "steel-water-bottle-1l", price: 499, mrp: 999, image: "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=800", category: "Home", rating: "4.5", affiliate_url: "https://www.amazon.in/dp/B0CXYZ127", is_active: true },
 ];
 
 const CATEGORIES = [
@@ -29,9 +22,9 @@ const CATEGORIES = [
 ];
 
 const SLIDES = [
-  { title: "Big Saving Days Are Live!", sub: "Up to 80% Off + Extra Discount on Top Brands", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#a855f7 100%)" },
-  { title: "Electronics Mega Sale", sub: "Earbuds, Watches, Speakers — Starting ₹499 Only", cta: "Grab Deal", emoji: "🎧", bg: "linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#8b5cf6 100%)" },
-  { title: "Fashion Fest is Here", sub: "Flat 70% Off on Kurtis, T-Shirts & Shoes", cta: "Explore", emoji: "👟", bg: "linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)" },
+  { title: "Big Saving Days Are Live!", sub: "Up to 80% Off + Extra Discount on Top Brands", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" },
+  { title: "Electronics Mega Sale", sub: "Earbuds, Watches, Speakers — Starting ₹499 Only", cta: "Grab Deal", emoji: "🎧", bg: "linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)" },
+  { title: "Fashion Fest is Here", sub: "Flat 70% Off on Kurtis, Shirts & Shoes", cta: "Explore", emoji: "👟", bg: "linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)" },
 ];
 
 const PAGES = {
@@ -44,8 +37,15 @@ const PAGES = {
   shipping: { title: "Shipping Policy", body: "BAZARU does not ship products. Shipping is done by the partner store where you buy.\n\nDelivery time, shipping charges and tracking will be shown on the partner website at checkout.\n\nMost partners offer Free Delivery above ₹499." },
 };
 
+/* deterministic fake review count from product id */
+const getReviews = (id) => {
+  let h = 0;
+  for (let i = 0; i < String(id).length; i++) h = (h * 31 + String(id).charCodeAt(i)) >>> 0;
+  return 500 + (h % 15000);
+};
+
 /* ============================================================
-   GLOBAL CSS (animations, hover, responsive)
+   GLOBAL CSS
 ============================================================ */
 const CSS = `
 .bz-app{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:#f1f3f6;color:#0f172a;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-font-smoothing:antialiased;scroll-behavior:smooth}
@@ -62,27 +62,29 @@ const CSS = `
 @keyframes bzFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
 @keyframes bzGrad{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 @keyframes bzToast{from{opacity:0;transform:translate(-50%,22px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes bzShine{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes bzPulseGlow{0%,100%{filter:drop-shadow(0 2px 8px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 2px 14px rgba(236,72,153,.7))}}
 
 /* ---------- HEADER ---------- */
-.bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4f46e5 0%,#6d28d9 55%,#7c3aed 100%);color:#fff;box-shadow:0 6px 24px rgba(79,70,229,.35)}
-.bz-topstrip{background:linear-gradient(90deg,#312e81,#5b21b6,#7c3aed);color:#e9d5ff;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;padding:6px 18px;flex-wrap:wrap}
+.bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 45%,#db2777 100%);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.4)}
+.bz-topstrip{background:linear-gradient(90deg,#1e1b4b,#6d28d9,#db2777);color:#f5d0fe;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;padding:6px 18px;flex-wrap:wrap}
 .bz-topstrip b{color:#fde047}
 .bz-header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:12px 18px}
 .bz-logo{cursor:pointer;user-select:none;line-height:1;display:flex;flex-direction:column;flex-shrink:0}
-.bz-logo b{font-size:24px;font-style:italic;letter-spacing:.5px;text-shadow:0 2px 10px rgba(0,0,0,.28)}
-.bz-logo span{font-size:10px;color:#fde047;font-style:italic;margin-top:2px}
+.bz-logo b.bz-logo-text{font-size:28px;font-weight:900;font-style:italic;letter-spacing:1.2px;background:linear-gradient(120deg,#fde047 0%,#fbbf24 25%,#fb923c 50%,#f472b6 75%,#fde047 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:bzShine 4s linear infinite,bzPulseGlow 3s ease-in-out infinite;line-height:1}
+.bz-logo span{font-size:10px;color:#fde047;font-style:italic;margin-top:3px;font-weight:700;letter-spacing:.5px}
 
-.bz-search{display:flex;align-items:center;background:#fff;border-radius:12px;overflow:hidden;flex:1;max-width:620px;box-shadow:0 4px 16px rgba(0,0,0,.14);transition:.25s}
+.bz-search{display:flex;align-items:center;background:#fff;border-radius:12px;overflow:hidden;flex:1;max-width:620px;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:.25s}
 .bz-search:focus-within{box-shadow:0 0 0 3px rgba(253,224,71,.6)}
 .bz-search input{flex:1;border:0;outline:0;padding:11px 14px;font-size:14px;color:#0f172a;background:transparent;min-width:0}
 .bz-search-btn{background:linear-gradient(135deg,#fbbf24,#f97316);border:0;color:#fff;padding:0 18px;align-self:stretch;font-size:16px;display:flex;align-items:center;transition:.2s}
 .bz-search-btn:hover{filter:brightness(1.1)}
 .bz-header-actions{display:flex;gap:8px;margin-left:auto;flex-shrink:0}
-.bz-icon-btn{position:relative;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);color:#fff;padding:9px 12px;border-radius:11px;font-size:13px;font-weight:700;transition:.22s;white-space:nowrap}
-.bz-icon-btn:hover{background:rgba(255,255,255,.28);transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.22)}
+.bz-icon-btn{position:relative;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);color:#fff;padding:9px 12px;border-radius:11px;font-size:13px;font-weight:700;transition:.22s;white-space:nowrap}
+.bz-icon-btn:hover{background:rgba(255,255,255,.3);transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.22)}
 .bz-badge{position:absolute;top:-6px;right:-6px;background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff;font-size:10px;min-width:19px;height:19px;border-radius:10px;display:flex;align-items:center;justify-content:center;padding:0 4px;font-weight:800;box-shadow:0 3px 8px rgba(234,88,12,.55);animation:bzPop .25s ease}
-.bz-hamburger{display:none;width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:19px;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
-.bz-hamburger:hover{background:rgba(255,255,255,.32);transform:scale(1.05)}
+.bz-hamburger{display:none;width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:19px;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
+.bz-hamburger:hover{background:rgba(255,255,255,.34);transform:scale(1.05)}
 .bz-mobile-search{display:none;max-width:none;margin:0 16px 12px}
 
 /* ---------- CATEGORY BAR ---------- */
@@ -91,13 +93,13 @@ const CSS = `
 .bz-catbar-inner::-webkit-scrollbar{display:none}
 .bz-chip{display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;background:#f1f5f9;border:1px solid transparent;font-size:13px;font-weight:700;color:#334155;white-space:nowrap;transition:.22s}
 .bz-chip:hover{background:#ede9fe;color:#6d28d9;transform:translateY(-2px)}
-.bz-chip.active{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;box-shadow:0 6px 16px rgba(124,58,237,.38)}
+.bz-chip.active{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;box-shadow:0 6px 18px rgba(168,85,247,.42)}
 
 /* ---------- MAIN / HERO ---------- */
 .bz-main{flex:1;width:100%;max-width:1280px;margin:0 auto;padding:16px 18px 44px}
-.bz-hero{position:relative;border-radius:20px;overflow:hidden;color:#fff;min-height:240px;display:flex;align-items:center;box-shadow:0 18px 44px rgba(79,70,229,.32);background-size:200% 200%;animation:bzGrad 9s ease infinite;transition:background-image .5s}
+.bz-hero{position:relative;border-radius:20px;overflow:hidden;color:#fff;min-height:240px;display:flex;align-items:center;box-shadow:0 18px 44px rgba(124,58,237,.38);background-size:200% 200%;animation:bzGrad 9s ease infinite;transition:background-image .5s}
 .bz-hero-content{padding:36px;max-width:640px;position:relative;z-index:2;animation:bzUp .5s ease both}
-.bz-hero h1{font-size:34px;line-height:1.15;margin-bottom:10px;text-shadow:0 3px 16px rgba(0,0,0,.25);font-weight:800;letter-spacing:-.5px}
+.bz-hero h1{font-size:34px;line-height:1.15;margin-bottom:10px;text-shadow:0 3px 16px rgba(0,0,0,.28);font-weight:800;letter-spacing:-.5px}
 .bz-hero p{font-size:15px;opacity:.94;margin-bottom:20px}
 .bz-hero-emoji{position:absolute;right:46px;top:50%;transform:translateY(-50%);font-size:126px;opacity:.92;animation:bzFloat 3.2s ease-in-out infinite;pointer-events:none;filter:drop-shadow(0 14px 30px rgba(0,0,0,.35))}
 .bz-hero-dots{position:absolute;bottom:16px;left:38px;display:flex;gap:7px;z-index:3}
@@ -109,16 +111,16 @@ const CSS = `
 .bz-section-head h2{font-size:21px;font-weight:800;letter-spacing:-.4px}
 .bz-count{font-size:12.5px;color:#64748b;font-weight:600}
 .bz-select{padding:9px 12px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:700;color:#334155;outline:none;cursor:pointer;transition:.2s}
-.bz-select:hover,.bz-select:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.15)}
+.bz-select:hover,.bz-select:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.15)}
 
 /* ---------- GRID / CARD ---------- */
 .bz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .bz-card{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8ecf3;display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s,border-color .32s;animation:bzUp .5s ease both;position:relative}
-.bz-card:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(15,23,42,.15);border-color:#ddd6fe}
-.bz-card-img{height:172px;display:flex;align-items:center;justify-content:center;font-size:72px;position:relative;cursor:pointer;background:linear-gradient(135deg,#eef2ff,#f5f3ff 50%,#fdf2f8);overflow:hidden}
-.bz-card-img span{transition:transform .38s cubic-bezier(.22,1,.36,1);display:block}
-.bz-card:hover .bz-card-img span{transform:scale(1.14) rotate(-5deg)}
-.bz-off{position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 4px 12px rgba(22,163,74,.38);z-index:3}
+.bz-card:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(124,58,237,.18);border-color:#e9d5ff}
+.bz-card-img{position:relative;cursor:pointer;background:#f1f5f9;overflow:hidden;line-height:0}
+.bz-card-img img{transition:transform .4s cubic-bezier(.22,1,.36,1)}
+.bz-card:hover .bz-card-img img{transform:scale(1.08)}
+.bz-off{position:absolute;top:10px;left:10px;background:linear-gradient(135deg,#22c55e,#15803d);color:#fff;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 4px 12px rgba(22,163,74,.42);z-index:3}
 .bz-heart{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.94);border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 3px 10px rgba(15,23,42,.12);transition:.22s;z-index:3}
 .bz-heart:hover{transform:scale(1.16);background:#fff}
 .bz-heart.active{background:#fee2e2;border-color:#fecaca}
@@ -138,17 +140,17 @@ const CSS = `
 .bz-btn-buy:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 10px 20px rgba(234,88,12,.42)}
 
 /* ---------- BUTTONS ---------- */
-.bz-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:12px 26px;border-radius:12px;font-weight:800;font-size:14px;transition:.22s;box-shadow:0 8px 22px rgba(124,58,237,.38)}
-.bz-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(124,58,237,.5);filter:brightness(1.06)}
+.bz-primary{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;border:none;padding:12px 26px;border-radius:12px;font-weight:800;font-size:14px;transition:.22s;box-shadow:0 8px 22px rgba(168,85,247,.42)}
+.bz-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(168,85,247,.55);filter:brightness(1.06)}
 .bz-ghost{background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;padding:11px 22px;border-radius:11px;font-weight:800;font-size:13px;transition:.2s}
 .bz-ghost:hover{background:#e2e8f0;color:#0f172a}
 .bz-input{width:100%;padding:12px 14px;border-radius:11px;border:1.5px solid #e2e8f0;font-size:14px;outline:none;transition:.2s;background:#f8fafc;color:#0f172a}
-.bz-input:focus{border-color:#8b5cf6;background:#fff;box-shadow:0 0 0 3px rgba(139,92,246,.16)}
+.bz-input:focus{border-color:#a855f7;background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.16)}
 
 /* ---------- FEATURES ---------- */
 .bz-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:32px 0 8px}
 .bz-feature{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e8ecf3;border-radius:14px;padding:16px 18px;transition:.25s}
-.bz-feature:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(15,23,42,.1);border-color:#ddd6fe}
+.bz-feature:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(124,58,237,.12);border-color:#e9d5ff}
 .bz-feature-icon{font-size:26px}
 .bz-feature b{display:block;font-size:13.5px;color:#0f172a}
 .bz-feature small{font-size:11.5px;color:#94a3b8;font-weight:600}
@@ -157,19 +159,20 @@ const CSS = `
 .bz-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);z-index:190;animation:bzFade .25s ease}
 .bz-drawer{position:fixed;top:0;bottom:0;left:0;width:305px;max-width:86vw;background:#fff;z-index:200;box-shadow:0 0 50px rgba(0,0,0,.3);animation:bzSlideL .32s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow-y:auto}
 .bz-drawer.right{left:auto;right:0;width:410px;max-width:93vw;animation:bzSlideR .32s cubic-bezier(.22,1,.36,1)}
-.bz-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;position:sticky;top:0;z-index:2}
+.bz-drawer-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;background:linear-gradient(135deg,#4338ca,#7c3aed,#db2777);color:#fff;position:sticky;top:0;z-index:2}
 .bz-drawer-head h3{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px}
 .bz-close{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.18);border:none;color:#fff;font-size:15px;display:flex;align-items:center;justify-content:center;transition:.25s}
 .bz-close:hover{background:rgba(255,255,255,.38);transform:rotate(90deg)}
 .bz-drawer-user{display:flex;align-items:center;gap:12px;padding:16px 20px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);border-bottom:1px solid #e2e8f0}
-.bz-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:0 6px 18px rgba(124,58,237,.38);flex-shrink:0}
+.bz-avatar{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;box-shadow:0 6px 18px rgba(236,72,153,.42);flex-shrink:0}
 .bz-drawer-title{font-size:11px;font-weight:800;letter-spacing:1px;color:#94a3b8;padding:16px 20px 8px;text-transform:uppercase}
 .bz-menu-link{display:flex;align-items:center;gap:12px;padding:13px 20px;font-size:14px;font-weight:700;color:#334155;border-bottom:1px solid #f1f5f9;transition:.22s;width:100%;text-align:left}
 .bz-menu-link:hover{background:#f5f3ff;color:#6d28d9;padding-left:27px}
 
 /* ---------- CART ITEMS ---------- */
 .bz-cart-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid #f1f5f9;animation:bzUp .3s ease both}
-.bz-cart-thumb{width:58px;height:58px;border-radius:13px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.bz-cart-thumb{width:62px;height:62px;border-radius:13px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);overflow:hidden;flex-shrink:0}
+.bz-cart-thumb img{width:100%;height:100%;object-fit:cover}
 .bz-qty{display:flex;align-items:center;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;width:fit-content;margin-top:6px}
 .bz-qty button{width:27px;height:27px;background:#f8fafc;border:none;font-size:14px;font-weight:800;color:#475569;transition:.15s}
 .bz-qty button:hover{background:#ede9fe;color:#6d28d9}
@@ -185,7 +188,9 @@ const CSS = `
 /* ---------- MODAL ---------- */
 .bz-modal{position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);animation:bzFade .2s ease}
 .bz-modal-card{background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 30px 90px rgba(15,23,42,.4);animation:bzPop .3s cubic-bezier(.22,1,.36,1);position:relative}
-.bz-modal-img{height:230px;display:flex;align-items:center;justify-content:center;font-size:110px;background:linear-gradient(135deg,#eef2ff,#f5f3ff 50%,#fdf2f8);animation:bzFloat 4s ease-in-out infinite}
+.bz-modal-img{height:280px;background:#f1f5f9;overflow:hidden}
+.bz-modal-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.bz-modal-img:hover img{transform:scale(1.06)}
 .bz-modal-actions{display:flex;gap:10px}
 .bz-modal-actions>*{flex:1}
 
@@ -196,23 +201,23 @@ const CSS = `
 
 /* ---------- INFO PAGE ---------- */
 .bz-info{max-width:840px;margin:0 auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 14px 34px rgba(15,23,42,.07);animation:bzUp .35s ease both;border:1px solid #e8ecf3}
-.bz-info h1{font-size:26px;margin-bottom:16px;background:linear-gradient(135deg,#4f46e5,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
+.bz-info h1{font-size:26px;margin-bottom:16px;background:linear-gradient(135deg,#4338ca,#a855f7,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 .bz-info p{white-space:pre-line;line-height:1.8;color:#334155;font-size:14px}
 .bz-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;background:#f1f5f9;border:1px solid #e2e8f0;padding:9px 16px;border-radius:10px;font-weight:800;font-size:13px;color:#475569;transition:.22s}
-.bz-back:hover{background:#ede9fe;color:#6d28d9;border-color:#ddd6fe;transform:translateX(-3px)}
+.bz-back:hover{background:#ede9fe;color:#6d28d9;border-color:#e9d5ff;transform:translateX(-3px)}
 
 /* ---------- FOOTER ---------- */
 .bz-footer{background:#0f172a;color:#cbd5e1;margin-top:auto;position:relative;overflow:hidden}
-.bz-footer::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7,#f97316,#6366f1);background-size:300% 100%;animation:bzGrad 6s linear infinite}
+.bz-footer::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7,#db2777,#f97316,#6366f1);background-size:300% 100%;animation:bzGrad 6s linear infinite}
 .bz-footer-inner{max-width:1280px;margin:0 auto;padding:44px 18px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:28px}
 .bz-foot-title{font-size:11.5px;font-weight:800;letter-spacing:1.2px;color:#64748b;margin-bottom:12px}
 .bz-flink{display:block;font-size:13px;color:#94a3b8;padding:5px 0;transition:.22s;text-align:left;font-weight:600}
 .bz-flink:hover{color:#fff;transform:translateX(5px)}
 .bz-social{width:36px;height:36px;border-radius:50%;background:#1e293b;display:flex;align-items:center;justify-content:center;font-size:15px;transition:.22s}
-.bz-social:hover{background:linear-gradient(135deg,#6366f1,#a855f7);transform:translateY(-3px);box-shadow:0 8px 18px rgba(124,58,237,.4)}
+.bz-social:hover{background:linear-gradient(135deg,#6366f1,#ec4899);transform:translateY(-3px);box-shadow:0 8px 18px rgba(236,72,153,.4)}
 .bz-news{display:flex;gap:8px;max-width:340px;margin-top:10px}
 .bz-news input{flex:1;padding:10px 14px;border-radius:10px;border:1px solid #334155;background:#1e293b;color:#fff;font-size:13px;outline:none;min-width:0}
-.bz-news input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.22)}
+.bz-news input:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.22)}
 .bz-foot-bottom{max-width:1280px;margin:0 auto;border-top:1px solid #1e293b;padding:18px 18px 10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#94a3b8;font-weight:600}
 .bz-foot-note{max-width:1280px;margin:0 auto;padding:0 18px 26px;font-size:11px;color:#64748b;line-height:1.6}
 
@@ -222,7 +227,7 @@ const CSS = `
   .bz-desktop-search{display:none!important}
   .bz-mobile-search{display:flex}
   .bz-header-inner{padding:10px 14px;gap:9px}
-  .bz-logo b{font-size:21px}
+  .bz-logo b.bz-logo-text{font-size:24px}
 }
 @media (max-width:640px){
   .bz-hide-sm{display:none}
@@ -235,7 +240,6 @@ const CSS = `
   .bz-hero-content{padding:24px 20px}
   .bz-hero-dots{left:22px;bottom:12px}
   .bz-grid{grid-template-columns:repeat(2,1fr);gap:10px}
-  .bz-card-img{height:130px;font-size:54px}
   .bz-card-body{padding:10px 10px 12px;gap:6px}
   .bz-card-title{font-size:12.5px;min-height:34px}
   .bz-price b{font-size:16px}
@@ -243,7 +247,7 @@ const CSS = `
   .bz-section-head h2{font-size:18px}
   .bz-info{padding:22px 18px;border-radius:14px}
   .bz-info h1{font-size:21px}
-  .bz-modal-img{height:180px;font-size:80px}
+  .bz-modal-img{height:200px}
   .bz-topstrip{font-size:10.5px;padding:5px 12px}
 }
 `;
@@ -272,16 +276,16 @@ export default function Home() {
   const [slide, setSlide] = useState(0);
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [toast, setToast] = useState(null);
-  const [newProd, setNewProd] = useState({ title: "", price: "", old: "", cat: "Mobiles", img: "📦", link: "" });
+  const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
 
   /* ---------- INIT ---------- */
   useEffect(() => {
     try {
-      const sp = localStorage.getItem("bazaru_products");
+      const sp = localStorage.getItem("bazaru_products_v2");
       if (sp) setProducts(JSON.parse(sp));
       const su = localStorage.getItem("bazaru_user");
       if (su) setUser(JSON.parse(su));
-      const sc = localStorage.getItem("bazaru_cart");
+      const sc = localStorage.getItem("bazaru_cart_v2");
       if (sc) setCart(JSON.parse(sc).map(c => ({ ...c, qty: c.qty || 1 })));
       const sw = localStorage.getItem("bazaru_wish");
       if (sw) setWishlist(JSON.parse(sw));
@@ -328,8 +332,8 @@ export default function Home() {
   /* ---------- HELPERS ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  const saveProducts = (list) => { setProducts(list); localStorage.setItem("bazaru_products", JSON.stringify(list)); };
-  const saveCart = (list) => { setCart(list); localStorage.setItem("bazaru_cart", JSON.stringify(list)); };
+  const saveProducts = (list) => { setProducts(list); localStorage.setItem("bazaru_products_v2", JSON.stringify(list)); };
+  const saveCart = (list) => { setCart(list); localStorage.setItem("bazaru_cart_v2", JSON.stringify(list)); };
   const saveWish = (list) => { setWishlist(list); localStorage.setItem("bazaru_wish", JSON.stringify(list)); };
 
   const goHome = () => { setPage(null); setCat("All"); setSearch(""); setMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
@@ -339,7 +343,7 @@ export default function Home() {
     const exists = cart.find(c => c.id === p.id);
     const next = exists
       ? cart.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c)
-      : [...cart, { id: p.id, title: p.title, price: p.price, img: p.img, qty: 1 }];
+      : [...cart, { id: p.id, title: p.title, price: p.price, image: p.image, qty: 1 }];
     saveCart(next);
     notify("Added to cart 🛒", "success");
   };
@@ -368,21 +372,24 @@ export default function Home() {
     if (adminPass === "admin123") { setIsAdmin(true); notify("Admin logged in ⚙️"); }
     else notify("Wrong password! Default: admin123", "error");
   };
+
   const addProduct = () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
+    const slug = newProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const p = {
-      id: Date.now(),
+      id: (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()),
       title: newProd.title,
+      slug,
       price: Number(newProd.price),
-      old: Number(newProd.old) || Number(newProd.price) * 2,
-      rating: 4.5, reviews: 100,
-      cat: newProd.cat,
-      img: newProd.img || "📦",
-      link: newProd.link || "#",
-      desc: "New arrival from Bazaru.",
+      mrp: Number(newProd.mrp) || Number(newProd.price) * 2,
+      image: newProd.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
+      category: newProd.category,
+      rating: "4.5",
+      affiliate_url: newProd.affiliate_url || "#",
+      is_active: true,
     };
     saveProducts([p, ...products]);
-    setNewProd({ title: "", price: "", old: "", cat: "Mobiles", img: "📦", link: "" });
+    setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
     notify("Product added ✅");
   };
 
@@ -398,17 +405,18 @@ export default function Home() {
 
   const filtered = useMemo(() => {
     let list = products.filter(p =>
-      (cat === "All" || p.cat === cat) &&
+      p.is_active !== false &&
+      (cat === "All" || p.category === cat) &&
       p.title.toLowerCase().includes(search.toLowerCase())
     );
     if (sort === "low") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "high") list = [...list].sort((a, b) => b.price - a.price);
-    if (sort === "rating") list = [...list].sort((a, b) => b.rating - a.rating);
-    if (sort === "discount") list = [...list].sort((a, b) => (1 - a.price / a.old) - (1 - b.price / b.old));
+    if (sort === "rating") list = [...list].sort((a, b) => Number(b.rating) - Number(a.rating));
+    if (sort === "discount") list = [...list].sort((a, b) => (1 - a.price / a.mrp) - (1 - b.price / b.mrp));
     return list;
   }, [products, cat, search, sort]);
 
-  const off = (p) => Math.round((1 - p.price / p.old) * 100);
+  const off = (p) => Math.round((1 - p.price / p.mrp) * 100);
 
   /* ============================================================
      RENDER
@@ -429,8 +437,8 @@ export default function Home() {
             <button className="bz-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">☰</button>
 
             <div className="bz-logo" onClick={goHome}>
-              <b>BAZARU</b>
-              <span>Explore Plus+</span>
+              <b className="bz-logo-text">BAZARU</b>
+              <span>✦ Explore Plus+ ✦</span>
             </div>
 
             <div className="bz-search bz-desktop-search">
@@ -550,7 +558,12 @@ export default function Home() {
                         >
                           {wishlist.includes(p.id) ? "❤️" : "🤍"}
                         </button>
-                        <span>{p.img}</span>
+                        <img
+                          src={p.image}
+                          alt={p.title}
+                          style={{ width: "100%", height: "170px", objectFit: "cover", borderRadius: "12px" }}
+                          onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }}
+                        />
                       </div>
 
                       <div className="bz-card-body">
@@ -558,12 +571,12 @@ export default function Home() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span className="bz-rate">{p.rating} ★</span>
-                          <span className="bz-reviews">({p.reviews.toLocaleString()})</span>
+                          <span className="bz-reviews">({getReviews(p.id).toLocaleString()})</span>
                         </div>
 
                         <div className="bz-price">
                           <b>₹{p.price}</b>
-                          <s>₹{p.old}</s>
+                          <s>₹{p.mrp}</s>
                           <em>{off(p)}% off</em>
                         </div>
 
@@ -573,7 +586,7 @@ export default function Home() {
 
                         <div className="bz-card-actions">
                           <button className="bz-btn-cart" onClick={() => addToCart(p)}>ADD TO CART</button>
-                          <a className="bz-btn-buy" href={p.link} target="_blank" rel="noopener noreferrer">BUY NOW</a>
+                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer">BUY NOW</a>
                         </div>
                       </div>
                     </div>
@@ -597,8 +610,8 @@ export default function Home() {
           <div className="bz-footer-inner">
             <div>
               <div className="bz-logo" style={{ marginBottom: 12 }} onClick={goHome}>
-                <b>BAZARU</b>
-                <span>Explore Plus+</span>
+                <b className="bz-logo-text" style={{ fontSize: 24 }}>BAZARU</b>
+                <span>✦ Explore Plus+ ✦</span>
               </div>
               <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>
                 India's fastest growing deals discovery platform. Best deals from Amazon, Flipkart,
@@ -732,7 +745,9 @@ export default function Home() {
                 ) : (
                   cart.map(item => (
                     <div className="bz-cart-item" key={item.id}>
-                      <div className="bz-cart-thumb">{item.img}</div>
+                      <div className="bz-cart-thumb">
+                        <img src={item.image} alt={item.title} />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
                         <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price * item.qty}</div>
@@ -787,7 +802,9 @@ export default function Home() {
                 ) : (
                   wishProducts.map(item => (
                     <div className="bz-cart-item" key={item.id}>
-                      <div className="bz-cart-thumb">{item.img}</div>
+                      <div className="bz-cart-thumb">
+                        <img src={item.image} alt={item.title} />
+                      </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
                         <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price}</div>
@@ -815,32 +832,40 @@ export default function Home() {
             <div className="bz-modal-card" onClick={e => e.stopPropagation()}>
               <button
                 className="bz-close"
-                style={{ position: "absolute", top: 12, right: 12, background: "rgba(15,23,42,.08)", color: "#0f172a", zIndex: 5 }}
+                style={{ position: "absolute", top: 12, right: 12, background: "rgba(15,23,42,.55)", color: "#fff", zIndex: 5 }}
                 onClick={() => setSelected(null)}
               >✕</button>
 
-              <div className="bz-modal-img">{selected.img}</div>
+              <div className="bz-modal-img">
+                <img
+                  src={selected.image}
+                  alt={selected.title}
+                  onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }}
+                />
+              </div>
 
               <div style={{ padding: 22 }}>
                 <h2 style={{ fontSize: 19, lineHeight: 1.35, fontWeight: 800 }}>{selected.title}</h2>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0" }}>
                   <span className="bz-rate">{selected.rating} ★</span>
-                  <span className="bz-reviews">{selected.reviews.toLocaleString()} ratings</span>
+                  <span className="bz-reviews">{getReviews(selected.id).toLocaleString()} ratings</span>
                   <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 800 }}>✔ Verified</span>
                 </div>
 
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>{selected.desc}</p>
+                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>
+                  Premium quality product from our curated collection. Delivered fast via trusted partner stores like Amazon & Flipkart. Checkout safely with bank-grade security and easy returns.
+                </p>
 
                 <div className="bz-price" style={{ margin: "14px 0" }}>
                   <b style={{ fontSize: 26 }}>₹{selected.price}</b>
-                  <s>₹{selected.old}</s>
+                  <s>₹{selected.mrp}</s>
                   <em>{off(selected)}% off</em>
                 </div>
 
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
-                  <a className="bz-btn-buy" href={selected.link} target="_blank" rel="noopener noreferrer">BUY NOW →</a>
+                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer">BUY NOW →</a>
                 </div>
 
                 <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
@@ -917,12 +942,13 @@ export default function Home() {
                       <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
                       <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                         <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
-                        <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.old} onChange={e => setNewProd({ ...newProd, old: e.target.value })} placeholder="Old Price ₹" type="number" />
-                        <select className="bz-select" value={newProd.cat} onChange={e => setNewProd({ ...newProd, cat: e.target.value })}>
+                        <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
+                        <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
                           <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
                         </select>
                       </div>
-                      <input className="bz-input" value={newProd.link} onChange={e => setNewProd({ ...newProd, link: e.target.value })} placeholder="Partner / EarnKaro link" />
+                      <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
+                      <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
                       <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                     </div>
 
@@ -932,8 +958,9 @@ export default function Home() {
                     <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
                       {products.map(p => (
                         <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                          <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
                           <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0 }}>
-                            {p.img} {p.title} — <b>₹{p.price}</b>
+                            {p.title} — <b>₹{p.price}</b>
                           </span>
                           <button
                             style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }}
