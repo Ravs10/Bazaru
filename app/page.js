@@ -286,6 +286,8 @@ export default function Home() {
   const [timeLeft, setTimeLeft] = useState("00:00:00");
   const [toast, setToast] = useState(null);
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
+ const [showCoinShop, setShowCoinShop] = useState(false);
+const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
   // === NEW: 3 TABLES ===
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
