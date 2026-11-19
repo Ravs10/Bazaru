@@ -1023,101 +1023,110 @@ export default function Home() {
   </div>
 )}
         {/* ================= ADMIN MODAL ================= */}
-        {showAdmin && (
-          <div className="bz-modal" onClick={() => setShowAdmin(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 660 }} onClick={e => e.stopPropagation()}>
-              <div className="bz-drawer-head">
-                <h3>⚙️ Admin Panel</h3>
-                <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
-              </div>
-
-              <div style={{ padding: 22 }}>
-                {!isAdmin ? (
-                  <div>
-                    <p style={{ fontSize: 13, color: "#475569", marginBottom: 12, fontWeight: 600 }}>
-                      Default Password: <b style={{ color: "#7c3aed" }}>admin123</b>
-                    </p>
-                    <input
-                      className="bz-input"
-                      type="password"
-                      value={adminPass}
-                      onChange={e => setAdminPass(e.target.value)}
-                      placeholder="Enter admin password"
-                    />
-                    <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAdminLogin}>
-                      LOGIN AS ADMIN
-                    </button>
-                  </div>
-                ) : (
-                  <div>
-                    <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
-
-                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                      <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
-                      <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-                        <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
-                        <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
-                        <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
-                          <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
-                        </select>
-                      </div>
-                      <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
-                      <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
-                      <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
-                    </div>
-
-                    <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>🎠 Add New Slider</h4>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                      <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title - jaise Big Sale Live!" />
-                      <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle - Up to 80% Off" />
-                      <div style={{ display: "flex", gap: 9 }}>
-                        <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
-                        <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
-                      </div>
-                      <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
-                        <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
-                        <option value="linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)">Blue Purple</option>
-                        <option value="linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)">Orange Pink</option>
-                        <option value="linear-gradient(135deg,#16a34a 0%,#059669 50%,#0d9488 100%)">Green</option>
-                        <option value="linear-gradient(135deg,#dc2626 0%,#ea580c 50%,#f59e0b 100%)">Red Orange</option>
-                      </select>
-                      <button className="bz-primary" onClick={addSlider}>+ ADD SLIDER</button>
-                    </div>
-                    <div style={{ maxHeight: 180, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12, marginTop: 10 }}>
-                      {slides.map(s => (
-                        <div key={s.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                          <span style={{ fontSize: 18 }}>{s.emoji}</span>
-                          <span style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{s.title}</span>
-                          <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteSlider(s.id)}>Delete</button>
-                        </div>
-                      ))}
-                    </div>
-
-                    <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>
-                      📦 Manage Products ({products.length})
-                    </h4>
-                    <div style={{ maxHeight: 260, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                      {products.map(p => (
-                        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
-                          <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-                          <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0 }}>
-                            {p.title} — <b>₹{p.price}</b>
-                          </span>
-                          <button
-                            style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }}
-                            onClick={() => deleteProduct(p.id)}
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+         {/* ================= ADMIN MODAL ================= */}
+{showAdmin && (
+  <div className="bz-modal" onClick={() => setShowAdmin(false)}>
+    <div className="bz-modal-card" style={{ maxWidth: 660 }} onClick={e => e.stopPropagation()}>
+      <div className="bz-drawer-head">
+        <h3>⚙️ Admin Panel - {user?.email}</h3>
+        <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
+      </div>
+      <div style={{ padding: 22 }}>
+        {!isAdmin ? (
+          <div style={{ textAlign: "center", padding: 20 }}>
+            <p style={{ fontSize: 14, fontWeight: 800 }}>Sirf Admin khol sakta hai!</p>
+            <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Pehle run4ravish@gmail.com se Login karo, fir Admin khulega.</p>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+              {["products","users","sliders"].map(t => (
+                <button key={t} onClick={()=>{setAdminTab(t); if(t==="users") loadAllUsers();}} style={{ flex:1, padding: "9px", borderRadius: 9, background: adminTab===t ? "#7c3aed" : "#f1f5f9", color: adminTab===t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
+              ))}
             </div>
+
+            {adminTab === "users" && (
+              <div>
+                <input className="bz-input" value={userSearch} onChange={e=>setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
+                {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                  <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.role==="admin" ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
+                    <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>toggleBlock(u)}>{u.is_blocked ? "UNBLOCK" : "BLOCK"}</button>
+                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>addCoinsToUser(u, 50)}>+50 🪙</button>
+                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>addCoinsToUser(u, -50)}>-50 🪙</button>
+                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={()=>toggleAdminRole(u)}>{u.role==="admin" ? "Remove Admin" : "Make Admin"}</button>
+                      <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11, color: "#dc2626" }} onClick={()=>deleteUserProfile(u)}>DELETE</button>
+                    </div>
+                  </div>
+                ))}
+                {allUsers.length===0 && <p style={{ fontSize: 13, color: "#64748b" }}>Koi user nahi mila. Pehle koi Signup karega tab dikhega.</p>}
+              </div>
+            )}
+
+            {adminTab === "products" && (
+              <div>
+                <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
+                  <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                    <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
+                    <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
+                    <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
+                      <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
+                    </select>
+                  </div>
+                  <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
+                  <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
+                  <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
+                </div>
+                <h4 style={{ fontSize: 14, fontWeight: 800, margin: "18px 0 8px" }}>All Products ({products.length})</h4>
+                {products.slice(0,20).map(p => (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #f1f5f9", padding: "8px 0", fontSize: 13 }}>
+                    <span style={{ flex: 1 }}>{p.title.slice(0,40)}</span>
+                    <b style={{ margin: "0 10px" }}>₹{p.price}</b>
+                    <button style={{ color: "#dc2626", fontWeight: 800, fontSize: 12 }} onClick={()=>deleteProduct(p.id)}>Hide</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {adminTab === "sliders" && (
+              <div>
+                <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 10 }}>🎠 Add New Slider</h4>
+                <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                  <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title" />
+                  <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle" />
+                  <div style={{ display: "flex", gap: 9 }}>
+                    <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
+                    <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
+                  </div>
+                  <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
+                    <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
+                    <option value="linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)">Blue Purple</option>
+                    <option value="linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)">Orange Pink</option>
+                    <option value="linear-gradient(135deg,#16a34a 0%,#059669 50%,#0d9488 100%)">Green</option>
+                    <option value="linear-gradient(135deg,#dc2626 0%,#ea580c 50%,#f59e0b 100%)">Red Orange</option>
+                  </select>
+                  <button className="bz-primary" onClick={addSlider}>+ ADD SLIDER</button>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  {slides.map(s => (
+                    <div key={s.id} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f1f5f9", fontSize: 13 }}>
+                      <span>{s.emoji} {s.title}</span>
+                      <button style={{ color: "#dc2626", fontWeight: 800 }} onClick={()=>deleteSlider(s.id)}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
+      </div>
+    </div>
+  </div>
+)}
 
 {/* ================= COIN SHOP MODAL ================= */}
 {showCoinShop && (
