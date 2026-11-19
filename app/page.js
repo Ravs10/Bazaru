@@ -422,17 +422,19 @@ export default function Home() {
 
   // === NEW: DAILY COIN CLAIM ===
   const claimCoins = async () => {
-    if(!user) return notify("Pehle Login karo!", "error");
-    const today = new Date().toISOString().slice(0,10);
-    const { data } = await supabase.from("coin_claims").select("*").eq("email", user.email).eq("claim_date", today);
-    if(data && data.length > 0) return notify("Aaj ka coin pehle se claim kar liya!", "error");
-    const { error } = await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
-    if(error) return notify("Try again", "error");
-    const total = coins + 10;
-    setCoins(total);
-    localStorage.setItem("bazaru_coins", String(total));
-    notify("🎉 +10 Coins Claim Ho Gaye!");
-  };
+  if(!user) return notify("Pehle Login karo!", "error");
+  const today = new Date().toISOString().slice(0,10);
+  const lastClaim = localStorage.getItem("bazaru_last_claim");
+  if(lastClaim === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+  try {
+    await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
+  } catch(e) { console.log("coin db error", e); }
+  const total = coins + 10;
+  setCoins(total);
+  localStorage.setItem("bazaru_coins", String(total));
+  localStorage.setItem("bazaru_last_claim", today);
+  notify("🎉 +10 Coins Claim Ho Gaye!");
+};
 
   const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
