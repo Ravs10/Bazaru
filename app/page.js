@@ -994,36 +994,34 @@ export default function Home() {
 
         {/* ================= LOGIN MODAL ================= */}
         {showLogin && (
-          <div className="bz-modal" onClick={() => setShowLogin(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: 28 }}>
-                <div style={{ textAlign: "center", marginBottom: 18 }}>
-                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>👋</div>
-                  <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Welcome to BAZARU</h2>
-                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
-                    Login to save your cart & wishlist
-                  </p>
-                </div>
-
-                <input
-                  className="bz-input"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="Enter your email"
-                  type="email"
-                />
-
-                <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleLogin}>
-                  LOGIN
-                </button>
-                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+  <div className="bz-modal" onClick={() => setShowLogin(false)}>
+    <div className="bz-modal-card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+      <div style={{ padding: 28 }}>
+        <div style={{ textAlign: "center", marginBottom: 18 }}>
+          <div style={{ fontSize: 42 }}>👋</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800 }}>Welcome to BAZARU</h2>
+          <p style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>Login to save your cart & wishlist</p>
+        </div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+          {["login","signup","forgot"].map(m => (
+            <button key={m} onClick={()=>setAuthMode(m)} style={{ flex:1, padding: "9px", borderRadius: 9, background: authMode===m ? "#7c3aed" : "#f1f5f9", color: authMode===m ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{m==="forgot" ? "Forgot?" : m}</button>
+          ))}
+        </div>
+        <input className="bz-input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" type="email" />
+        {authMode!=="forgot" && <input className="bz-input" style={{ marginTop: 10 }} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password (min 6)" />}
+        {authMode==="login" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAuthLogin}>{authLoading ? "Checking..." : "LOGIN"}</button>}
+        {authMode==="signup" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleSignup}>{authLoading ? "Creating..." : "CREATE ACCOUNT"}</button>}
+        {authMode==="forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK 📧</button>}
+        {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
+          <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
+          <input className="bz-input" type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Naya Password" />
+          <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
+        </div>}
+        <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
         {/* ================= ADMIN MODAL ================= */}
         {showAdmin && (
           <div className="bz-modal" onClick={() => setShowAdmin(false)}>
