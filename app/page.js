@@ -1121,36 +1121,6 @@ export default function Home() {
           </div>
         )}
 
-        {/* ================= COIN SHOP MODAL ================= */}
-        {showCoinShop && (
-          <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: 24, textAlign: "center" }}>
-                <div style={{ fontSize: 48 }}>🪙</div>
-                <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
-                <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
-                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
-                <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
-                <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
-                  </div>
-                </div>
-                <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
-              </div>
-            </div>
-          </div>
-        )}
-
 {/* ================= COIN SHOP MODAL ================= */}
 {showCoinShop && (
   <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
