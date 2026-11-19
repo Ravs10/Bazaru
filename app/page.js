@@ -462,7 +462,32 @@ const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", 
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
     notify("Product Supabase me add ho gaya ✅");
   };
+// === ADMIN SLIDER ADD ===
+const addSlider = async () => {
+  if (!newSlide.title) return notify("Slider title likho", "error");
+  const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
+  if (error) return notify("Error: " + error.message, "error");
+  setSlides([...slides, data]);
+  setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
+  notify("Slider add ho gaya ✅");
+};
+const deleteSlider = async (id) => {
+  await supabase.from("sliders").delete().eq("id", id);
+  setSlides(slides.filter(s => s.id !== id));
+  notify("Slider delete ho gaya", "error");
+};
 
+// === COIN SHOP REDEEM ===
+const redeemCoins = (need, reward) => {
+  if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
+  const total = coins - need;
+  setCoins(total);
+  localStorage.setItem("bazaru_coins", String(total));
+  const code = "BAZARU" + need + Math.floor(Math.random()*900+100);
+  notify(`🎉 Code mil gaya: ${code} - ${reward}`);
+  navigator.clipboard?.writeText(code);
+};
+  
   const deleteProduct = async (id) => {
     await supabase.from("products").update({ is_active: false }).eq("id", id);
     setProducts(products.filter(x => x.id !== id));
