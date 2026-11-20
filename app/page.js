@@ -292,15 +292,43 @@ export default function Home() {
   /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  /* ---------- STRONG AUTH - SUPABASE ---------- */
+  /* ---------- LOAD PROFILE (overwrite protection) ---------- */
   const loadProfile = async (authUser) => {
     if (!authUser) return null;
-    const { data } = await supabase.from("profiles").select("*").eq("id", authUser.id).single();
-    if (!data) {
-      await supabase.from("profiles").insert([{ id: authUser.id, email: authUser.email, name: authUser.email.split("@")[0], role: "user" }]);
-      return { email: authUser.email, name: authUser.email.split("@")[0], role: "user", id: authUser.id, coins: 0 };
+
+    // 1. Pehle email se check karo - purane user ko overwrite mat karo
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", authUser.email)
+      .maybeSingle();
+
+    if (existing) return existing;
+
+    // 2. Sirf NAYA user insert karo
+    const { data: newProf, error } = await supabase
+      .from("profiles")
+      .insert([{
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.email.split("@")[0],
+        coins: 10,
+        is_admin: authUser.email === ADMIN_EMAIL,
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.log("Profile insert error:", error.message);
+      return {
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.email.split("@")[0],
+        coins: 10,
+        is_admin: authUser.email === ADMIN_EMAIL,
+      };
     }
-    return data;
+    return newProf;
   };
 
   const handleSignup = async () => {
@@ -325,10 +353,16 @@ export default function Home() {
       await supabase.auth.signOut();
       return notify("Your account has been blocked by Admin!", "error");
     }
-    const u = { id: data.user.id, email: data.user.email, name: prof?.name || email.split("@")[0], role: prof?.role || "user", coins: prof?.coins || 0 };
+    const u = {
+      id: data.user.id,
+      email: data.user.email,
+      name: prof?.name || email.split("@")[0],
+      is_admin: prof?.is_admin === true,
+      coins: prof?.coins || 0
+    };
     setUser(u);
     setCoins(prof?.coins || 0);
-    if (prof?.role === "admin" || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
+    if (prof?.is_admin === true || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
     setShowLogin(false); setPassword("");
     notify(`Welcome, ${u.name}! 👋`);
   };
@@ -380,11 +414,19 @@ export default function Home() {
     if (user?.id === u.id) setCoins(newCoins);
     loadAllUsers(); notify(`${amt} coins added ✅`);
   };
-  const toggleAdminRole = async (u) => {
-    if (u.email === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
-    await supabase.from("profiles").update({ role: u.role === "admin" ? "user" : "admin" }).eq("id", u.id);
-    loadAllUsers(); notify("Role changed ✅");
+
+  // === MAKE ADMIN (by email) ===
+  const makeAdmin = async (targetEmail, makeAdminVal) => {
+    if (targetEmail === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
+    const { error } = await supabase
+      .from("profiles")
+      .update({ is_admin: makeAdminVal })
+      .eq("email", targetEmail);
+    if (error) return notify("Error: " + error.message, "error");
+    loadAllUsers();
+    notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
   };
+
   const deleteUserProfile = async (u) => {
     if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
     if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
@@ -393,7 +435,7 @@ export default function Home() {
   };
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
-    if (user.role !== "admin" && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
+    if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
     setIsAdmin(true); loadAllUsers(); setShowAdmin(true);
   };
 
@@ -436,9 +478,14 @@ export default function Home() {
       if (data?.session?.user) {
         const prof = await loadProfile(data.session.user);
         if (prof?.is_blocked) { await supabase.auth.signOut(); return; }
-        setUser({ id: data.session.user.id, email: data.session.user.email, name: prof?.name || "User", role: prof?.role || "user" });
+        setUser({
+          id: data.session.user.id,
+          email: data.session.user.email,
+          name: prof?.name || "User",
+          is_admin: prof?.is_admin === true
+        });
         setCoins(prof?.coins || 0);
-        if (prof?.role === "admin" || data.session.user.email === ADMIN_EMAIL) setIsAdmin(true);
+        if (prof?.is_admin === true || data.session.user.email === ADMIN_EMAIL) setIsAdmin(true);
       }
     });
 
@@ -543,33 +590,24 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-  /* ---------- BUY NOW CLICK TRACKING (NEW) ---------- */
-  const handleBuyClick = async (product, e) => {
-    if (e) e.preventDefault();
-    console.log("Click:", product.title);
+  /* ---------- BUY NOW CLICK TRACKING ---------- */
+  const handleBuyClick = async (product) => {
+    console.log("CLICK:", product.title);
 
-    try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      console.log("User:", authUser?.email);
+    const { error } = await supabase.from("clicks").insert([{
+      product_id: product.id,
+      product_title: product.title,
+      email: user?.email || "guest",
+      created_at: new Date().toISOString()
+    }]);
 
-      const { data, error } = await supabase.from('clicks').insert([{
-        product_id: product.id,
-        product_title: product.title,
-        email: authUser?.email || 'guest@gmail.com',
-        created_at: new Date().toISOString()
-      }]);
-
-      if (error) {
-        console.log("CLICK ERROR:", error.message);
-      } else {
-        console.log("Click saved!", data);
-        setClickCount(c => c + 1);
-      }
-    } catch (err) {
-      console.log("Catch Error:", err);
+    if (error) console.log("CLICK ERROR:", error.message);
+    else {
+      console.log("CLICK SAVED");
+      setClickCount(c => c + 1);
     }
 
-    window.open(product.affiliate_url, '_blank');
+    window.open(product.affiliate_url, "_blank");
   };
 
   const claimCoins = async () => {
@@ -848,7 +886,7 @@ export default function Home() {
 
                         <div className="bz-card-actions">
                           <button className="bz-btn-cart" onClick={() => addToCart(p)}>ADD TO CART</button>
-                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={(e) => handleBuyClick(p, e)}>BUY NOW</a>
+                          <button className="bz-btn-buy" onClick={() => handleBuyClick(p)}>BUY NOW</button>
                         </div>
                       </div>
                     </div>
@@ -1126,7 +1164,7 @@ export default function Home() {
 
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
-                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={(e) => handleBuyClick(selected, e)}>BUY NOW →</a>
+                  <button className="bz-btn-buy" onClick={() => handleBuyClick(selected)}>BUY NOW →</button>
                 </div>
 
                 <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
@@ -1269,13 +1307,13 @@ export default function Home() {
                         <input className="bz-input" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
                         {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
                           <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.role === "admin" ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
+                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => toggleBlock(u)}>{u.is_blocked ? "UNBLOCK" : "BLOCK"}</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => toggleAdminRole(u)}>{u.role === "admin" ? "Remove Admin" : "Make Admin"}</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => makeAdmin(u.email, !u.is_admin)}>{u.is_admin ? "Remove Admin" : "Make Admin"}</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11, color: "#dc2626" }} onClick={() => deleteUserProfile(u)}>DELETE</button>
                             </div>
                           </div>
