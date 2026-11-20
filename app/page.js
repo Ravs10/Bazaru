@@ -44,7 +44,6 @@ const PAGES = {
   shipping: { title: "Shipping Policy", body: "BAZARU does not ship products. Shipping is done by the partner store where you buy.\n\nDelivery time, shipping charges and tracking will be shown on the partner website at checkout.\n\nMost partners offer Free Delivery above ₹499." },
 };
 
-/* deterministic fake review count from product id */
 const getReviews = (id) => {
   let h = 0;
   for (let i = 0; i < String(id).length; i++) h = (h * 31 + String(id).charCodeAt(i)) >>> 0;
@@ -73,7 +72,6 @@ const CSS = `
 @keyframes bzPulseGlow{0%,100%{filter:drop-shadow(0 2px 8px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 2px 14px rgba(236,72,153,.7))}}
 @keyframes bzSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 
-/* ---------- HEADER ---------- */
 .bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 45%,#db2777 100%);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.4)}
 .bz-topstrip{background:linear-gradient(90deg,#1e1b4b,#6d28d9,#db2777);color:#f5d0fe;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;padding:6px 18px;flex-wrap:wrap}
 .bz-topstrip b{color:#fde047}
@@ -95,7 +93,6 @@ const CSS = `
 .bz-hamburger:hover{background:rgba(255,255,255,.34);transform:scale(1.05)}
 .bz-mobile-search{display:none;max-width:none;margin:0 16px 12px}
 
-/* ---------- CATEGORY BAR ---------- */
 .bz-catbar{background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 2px 12px rgba(15,23,42,.05)}
 .bz-catbar-inner{max-width:1280px;margin:0 auto;display:flex;gap:8px;padding:10px 18px;overflow-x:auto;scrollbar-width:none}
 .bz-catbar-inner::-webkit-scrollbar{display:none}
@@ -103,7 +100,6 @@ const CSS = `
 .bz-chip:hover{background:#ede9fe;color:#6d28d9;transform:translateY(-2px)}
 .bz-chip.active{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;box-shadow:0 6px 18px rgba(168,85,247,.42)}
 
-/* ---------- MAIN / HERO ---------- */
 .bz-main{flex:1;width:100%;max-width:1280px;margin:0 auto;padding:16px 18px 44px}
 .bz-hero{position:relative;border-radius:20px;overflow:hidden;color:#fff;min-height:240px;display:flex;align-items:center;box-shadow:0 18px 44px rgba(124,58,237,.38);background-size:200% 200%;animation:bzGrad 9s ease infinite;transition:background-image .5s}
 .bz-hero-content{padding:36px;max-width:640px;position:relative;z-index:2;animation:bzUp .5s ease both}
@@ -114,14 +110,12 @@ const CSS = `
 .bz-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;transition:.28s}
 .bz-dot.active{width:28px;border-radius:999px;background:#fff}
 
-/* ---------- SECTION ---------- */
 .bz-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:30px 0 16px}
 .bz-section-head h2{font-size:21px;font-weight:800;letter-spacing:-.4px}
 .bz-count{font-size:12.5px;color:#64748b;font-weight:600}
 .bz-select{padding:9px 12px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:700;color:#334155;outline:none;cursor:pointer;transition:.2s}
 .bz-select:hover,.bz-select:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.15)}
 
-/* ---------- GRID / CARD ---------- */
 .bz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .bz-card{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8ecf3;display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s,border-color .32s;animation:bzUp .5s ease both;position:relative}
 .bz-card:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(124,58,237,.18);border-color:#e9d5ff}
@@ -147,7 +141,6 @@ const CSS = `
 .bz-btn-buy{flex:1;padding:10px 6px;border-radius:10px;background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff;font-size:12.5px;font-weight:800;transition:.22s;text-align:center}
 .bz-btn-buy:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 10px 20px rgba(234,88,12,.42)}
 
-/* ---------- BUTTONS ---------- */
 .bz-primary{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;border:none;padding:12px 26px;border-radius:12px;font-weight:800;font-size:14px;transition:.22s;box-shadow:0 8px 22px rgba(168,85,247,.42)}
 .bz-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(168,85,247,.55);filter:brightness(1.06)}
 .bz-ghost{background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;padding:11px 22px;border-radius:11px;font-weight:800;font-size:13px;transition:.2s}
@@ -155,7 +148,6 @@ const CSS = `
 .bz-input{width:100%;padding:12px 14px;border-radius:11px;border:1.5px solid #e2e8f0;font-size:14px;outline:none;transition:.2s;background:#f8fafc;color:#0f172a}
 .bz-input:focus{border-color:#a855f7;background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.16)}
 
-/* ---------- FEATURES ---------- */
 .bz-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:32px 0 8px}
 .bz-feature{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e8ecf3;border-radius:14px;padding:16px 18px;transition:.25s}
 .bz-feature:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(124,58,237,.12);border-color:#e9d5ff}
@@ -163,7 +155,6 @@ const CSS = `
 .bz-feature b{display:block;font-size:13.5px;color:#0f172a}
 .bz-feature small{font-size:11.5px;color:#94a3b8;font-weight:600}
 
-/* ---------- DRAWER ---------- */
 .bz-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);z-index:190;animation:bzFade .25s ease}
 .bz-drawer{position:fixed;top:0;bottom:0;left:0;width:305px;max-width:86vw;background:#fff;z-index:200;box-shadow:0 0 50px rgba(0,0,0,.3);animation:bzSlideL .32s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow-y:auto}
 .bz-drawer.right{left:auto;right:0;width:410px;max-width:93vw;animation:bzSlideR .32s cubic-bezier(.22,1,.36,1)}
@@ -177,7 +168,6 @@ const CSS = `
 .bz-menu-link{display:flex;align-items:center;gap:12px;padding:13px 20px;font-size:14px;font-weight:700;color:#334155;border-bottom:1px solid #f1f5f9;transition:.22s;width:100%;text-align:left}
 .bz-menu-link:hover{background:#f5f3ff;color:#6d28d9;padding-left:27px}
 
-/* ---------- CART ITEMS ---------- */
 .bz-cart-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid #f1f5f9;animation:bzUp .3s ease both}
 .bz-cart-thumb{width:62px;height:62px;border-radius:13px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);overflow:hidden;flex-shrink:0}
 .bz-cart-thumb img{width:100%;height:100%;object-fit:cover}
@@ -194,7 +184,6 @@ const CSS = `
 .bz-empty p{font-size:13px;color:#94a3b8;font-weight:600}
 .bz-spinner{width:52px;height:52px;border-radius:50%;border:4px solid #e9d5ff;border-top-color:#a855f7;animation:bzSpin .8s linear infinite}
 
-/* ---------- MODAL ---------- */
 .bz-modal{position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);animation:bzFade .2s ease}
 .bz-modal-card{background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 30px 90px rgba(15,23,42,.4);animation:bzPop .3s cubic-bezier(.22,1,.36,1);position:relative}
 .bz-modal-img{height:280px;background:#f1f5f9;overflow:hidden}
@@ -203,19 +192,16 @@ const CSS = `
 .bz-modal-actions{display:flex;gap:10px}
 .bz-modal-actions>*{flex:1}
 
-/* ---------- TOAST ---------- */
 .bz-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:300;background:#0f172a;color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:700;box-shadow:0 16px 44px rgba(15,23,42,.45);display:flex;align-items:center;gap:9px;animation:bzToast .3s cubic-bezier(.22,1,.36,1);max-width:92vw}
 .bz-toast.success{background:linear-gradient(135deg,#16a34a,#15803d)}
 .bz-toast.error{background:linear-gradient(135deg,#dc2626,#b91c1c)}
 
-/* ---------- INFO PAGE ---------- */
 .bz-info{max-width:840px;margin:0 auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 14px 34px rgba(15,23,42,.07);animation:bzUp .35s ease both;border:1px solid #e8ecf3}
 .bz-info h1{font-size:26px;margin-bottom:16px;background:linear-gradient(135deg,#4338ca,#a855f7,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 .bz-info p{white-space:pre-line;line-height:1.8;color:#334155;font-size:14px}
 .bz-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;background:#f1f5f9;border:1px solid #e2e8f0;padding:9px 16px;border-radius:10px;font-weight:800;font-size:13px;color:#475569;transition:.22s}
 .bz-back:hover{background:#ede9fe;color:#6d28d9;border-color:#e9d5ff;transform:translateX(-3px)}
 
-/* ---------- FOOTER ---------- */
 .bz-footer{background:#0f172a;color:#cbd5e1;margin-top:auto;position:relative;overflow:hidden}
 .bz-footer::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7,#db2777,#f97316,#6366f1);background-size:300% 100%;animation:bzGrad 6s linear infinite}
 .bz-footer-inner{max-width:1280px;margin:0 auto;padding:44px 18px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:28px}
@@ -230,7 +216,6 @@ const CSS = `
 .bz-foot-bottom{max-width:1280px;margin:0 auto;border-top:1px solid #1e293b;padding:18px 18px 10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#94a3b8;font-weight:600}
 .bz-foot-note{max-width:1280px;margin:0 auto;padding:0 18px 26px;font-size:11px;color:#64748b;line-height:1.6}
 
-/* ---------- RESPONSIVE ---------- */
 @media (max-width:900px){
   .bz-hamburger{display:flex}
   .bz-desktop-search{display:none!important}
@@ -282,12 +267,12 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [authMode, setAuthMode] = useState("login"); // login | signup | forgot
+  const [authMode, setAuthMode] = useState("login");
   const [newPassword, setNewPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
-  const [adminTab, setAdminTab] = useState("products"); // products | users | sliders | clicks
+  const [adminTab, setAdminTab] = useState("products");
   const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -302,7 +287,7 @@ export default function Home() {
 
   // === ADMIN CLICKS DASHBOARD STATE ===
   const [clicks, setClicks] = useState([]);
-  const [clickFilter, setClickFilter] = useState("daily"); // daily, weekly, monthly, yearly
+  const [clickFilter, setClickFilter] = useState("daily");
 
   /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
@@ -319,26 +304,26 @@ export default function Home() {
   };
 
   const handleSignup = async () => {
-    if (!email.includes("@")) return notify("Sahi email dalo", "error");
-    if (password.length < 6) return notify("Password kam se kam 6 ka hona chahiye", "error");
+    if (!email.includes("@")) return notify("Enter a valid email", "error");
+    if (password.length < 6) return notify("Password must be at least 6 characters", "error");
     setAuthLoading(true);
     const { error } = await supabase.auth.signUp({ email: email.trim(), password });
     setAuthLoading(false);
     if (error) return notify(error.message, "error");
-    notify("Account ban gaya! Ab Login karo ✅");
+    notify("Account created! Now Login ✅");
     setAuthMode("login");
   };
 
   const handleAuthLogin = async () => {
-    if (!email || !password) return notify("Email + Password dono dalo", "error");
+    if (!email || !password) return notify("Enter both Email & Password", "error");
     setAuthLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setAuthLoading(false);
-    if (error) return notify("Galat email ya password!", "error");
+    if (error) return notify("Wrong email or password!", "error");
     const prof = await loadProfile(data.user);
     if (prof?.is_blocked) {
       await supabase.auth.signOut();
-      return notify("Tumhara account Admin ne Block kar diya hai!", "error");
+      return notify("Your account has been blocked by Admin!", "error");
     }
     const u = { id: data.user.id, email: data.user.email, name: prof?.name || email.split("@")[0], role: prof?.role || "user", coins: prof?.coins || 0 };
     setUser(u);
@@ -349,26 +334,25 @@ export default function Home() {
   };
 
   const handleForgot = async () => {
-    if (!email.includes("@")) return notify("Pehle email dalo, fir Forgot dabao", "error");
+    if (!email.includes("@")) return notify("Enter email first, then press Forgot", "error");
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
     if (error) return notify(error.message, "error");
-    notify("Reset link email pe bhej diya! 📧 Email check karo");
+    notify("Reset link sent to your email! 📧 Check your inbox");
   };
 
   const handleChangePassword = async () => {
-    if (newPassword.length < 6) return notify("Naya password 6+ ka rakho", "error");
+    if (newPassword.length < 6) return notify("New password must be 6+ characters", "error");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return notify(error.message, "error");
-    notify("Password badal gaya ✅");
+    notify("Password changed ✅");
     setNewPassword("");
   };
 
-  /* ---------- RESET PASSWORD (link se aane wale user ke liye) ---------- */
   const handleResetPassword = async () => {
-    if (newPassword.length < 6) return notify("Password kam se kam 6 ka hona chahiye", "error");
+    if (newPassword.length < 6) return notify("Password must be at least 6 characters", "error");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return notify(error.message, "error");
-    notify("Password badal gaya! Ab Login karo ✅");
+    notify("Password changed! Now Login ✅");
     setShowResetPassword(false);
     setNewPassword("");
     setShowLogin(true);
@@ -388,28 +372,28 @@ export default function Home() {
   const toggleBlock = async (u) => {
     await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
     loadAllUsers();
-    notify(u.is_blocked ? "User Unblock ho gaya" : "User Block ho gaya", "error");
+    notify(u.is_blocked ? "User Unblocked" : "User Blocked", "error");
   };
   const addCoinsToUser = async (u, amt) => {
     const newCoins = (u.coins || 0) + amt;
     await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
     if (user?.id === u.id) setCoins(newCoins);
-    loadAllUsers(); notify(`${amt} coins diye ✅`);
+    loadAllUsers(); notify(`${amt} coins added ✅`);
   };
   const toggleAdminRole = async (u) => {
-    if (u.email === ADMIN_EMAIL) return notify("Super Admin ka role nahi badal sakte!", "error");
+    if (u.email === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
     await supabase.from("profiles").update({ role: u.role === "admin" ? "user" : "admin" }).eq("id", u.id);
-    loadAllUsers(); notify("Role badal gaya ✅");
+    loadAllUsers(); notify("Role changed ✅");
   };
   const deleteUserProfile = async (u) => {
-    if (u.email === ADMIN_EMAIL) return notify("Super Admin ko delete nahi kar sakte!", "error");
-    if (!confirm(`Pakka ${u.email} ko delete karna hai?`)) return;
+    if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
+    if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
     await supabase.from("profiles").delete().eq("id", u.id);
-    loadAllUsers(); notify("User delete ho gaya", "error");
+    loadAllUsers(); notify("User deleted", "error");
   };
   const handleAdminOpen = () => {
-    if (!user) return notify("Pehle Login karo!", "error");
-    if (user.role !== "admin" && user.email !== ADMIN_EMAIL) return notify("Sirf Admin khol sakta hai!", "error");
+    if (!user) return notify("Please Login first!", "error");
+    if (user.role !== "admin" && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
     setIsAdmin(true); loadAllUsers(); setShowAdmin(true);
   };
 
@@ -446,9 +430,8 @@ export default function Home() {
     return Object.values(map).sort((a, b) => b.count - a.count);
   };
 
-  /* ---------- INIT - SUPABASE SE LOAD ---------- */
+  /* ---------- INIT - SUPABASE LOAD ---------- */
   useEffect(() => {
-    // Restore session if already logged in
     supabase.auth.getSession().then(async ({ data }) => {
       if (data?.session?.user) {
         const prof = await loadProfile(data.session.user);
@@ -459,7 +442,6 @@ export default function Home() {
       }
     });
 
-    // Password Reset Link pakadne ke liye
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {
         setShowResetPassword(true);
@@ -517,20 +499,17 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
-  /* ---------- HERO AUTO SLIDE ---------- */
   useEffect(() => {
     const t = setInterval(() => setSlide(s => (s + 1) % slides.length), 4200);
     return () => clearInterval(t);
   }, [slides.length]);
 
-  /* ---------- TOAST AUTO HIDE ---------- */
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 2300);
     return () => clearTimeout(t);
   }, [toast]);
 
-  /* ---------- SCROLL LOCK ---------- */
   const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || showResetPassword || !!selected;
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -564,43 +543,61 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-  const handleBuyClick = async (p) => {
+  /* ---------- BUY NOW CLICK TRACKING (NEW) ---------- */
+  const handleBuyClick = async (product, e) => {
+    if (e) e.preventDefault();
+    console.log("Click:", product.title);
+
     try {
-      await supabase.from("clicks").insert([{
-        product_id: p.id,
-        product_title: p.title,
-        email: user ? user.email : "guest"
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      console.log("User:", authUser?.email);
+
+      const { data, error } = await supabase.from('clicks').insert([{
+        product_id: product.id,
+        product_title: product.title,
+        email: authUser?.email || 'guest@gmail.com',
+        created_at: new Date().toISOString()
       }]);
-      setClickCount(c => c + 1);
-    } catch (e) {}
+
+      if (error) {
+        console.log("CLICK ERROR:", error.message);
+      } else {
+        console.log("Click saved!", data);
+        setClickCount(c => c + 1);
+      }
+    } catch (err) {
+      console.log("Catch Error:", err);
+    }
+
+    window.open(product.affiliate_url, '_blank');
   };
 
   const claimCoins = async () => {
-    if (!user) return notify("Pehle Login karo!", "error");
+    if (!user) return notify("Please Login first!", "error");
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Check karo aaj claim kiya hai kya - profiles se hi
+    // 1. Check if already claimed today - from profiles
     const { data: prof } = await supabase.from("profiles").select("last_claim_date, coins").eq("id", user.id).single();
-    if (prof?.last_claim_date === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+    if (prof?.last_claim_date === today) return notify("Today's coin already claimed!", "error");
 
     const newTotal = (prof?.coins || coins || 0) + 10;
 
-    // 2. Coins + Date dono ek saath save karo
+    // 2. Save coins + date together
     const { error } = await supabase.from("profiles").update({ coins: newTotal, last_claim_date: today }).eq("id", user.id);
-    if (error) return notify("Coin save nahi hua: " + error.message, "error");
+    if (error) return notify("Could not save coin: " + error.message, "error");
 
     setCoins(newTotal);
-    notify("🎉 +10 Coins Claim Ho Gaye!");
+    notify("🎉 +10 Coins Claimed!");
   };
 
   const redeemCoins = async (need, reward) => {
-    if (!user) return notify("Pehle Login karo!", "error");
-    if (coins < need) return notify(`Tumhare paas sirf ${coins} coins hai, ${need} chahiye!`, "error");
+    if (!user) return notify("Please Login first!", "error");
+    if (coins < need) return notify(`You have only ${coins} coins, need ${need}!`, "error");
     const total = coins - need;
     setCoins(total);
     if (user?.id) await supabase.from("profiles").update({ coins: total }).eq("id", user.id);
     const code = "BAZARU" + need + Math.floor(Math.random() * 900 + 100);
-    notify(`🎉 Code mil gaya: ${code} - ${reward}`);
+    notify(`🎉 Code received: ${code} - ${reward}`);
     navigator.clipboard?.writeText(code);
   };
 
@@ -625,27 +622,27 @@ export default function Home() {
 
     setProducts([data, ...products]);
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
-    notify("Product Supabase me add ho gaya ✅");
+    notify("Product added to Supabase ✅");
   };
 
   const addSlider = async () => {
-    if (!newSlide.title) return notify("Slider title likho", "error");
+    if (!newSlide.title) return notify("Enter slider title", "error");
     const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
     if (error) return notify("Error: " + error.message, "error");
     setSlides([...slides, data]);
     setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
-    notify("Slider add ho gaya ✅");
+    notify("Slider added ✅");
   };
   const deleteSlider = async (id) => {
     await supabase.from("sliders").delete().eq("id", id);
     setSlides(slides.filter(s => s.id !== id));
-    notify("Slider delete ho gaya", "error");
+    notify("Slider deleted", "error");
   };
 
   const deleteProduct = async (id) => {
     await supabase.from("products").update({ is_active: false }).eq("id", id);
     setProducts(products.filter(x => x.id !== id));
-    notify("Product hide ho gaya", "error");
+    notify("Product hidden", "error");
   };
 
   const checkout = () => {
@@ -799,7 +796,7 @@ export default function Home() {
                 <div className="bz-empty">
                   <div className="bz-spinner" />
                   <h4>Products Loading...</h4>
-                  <p>Supabase se deals aa rahe hai</p>
+                  <p>Fetching deals from Supabase...</p>
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="bz-empty">
@@ -851,7 +848,7 @@ export default function Home() {
 
                         <div className="bz-card-actions">
                           <button className="bz-btn-cart" onClick={() => addToCart(p)}>ADD TO CART</button>
-                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={() => handleBuyClick(p)}>BUY NOW</a>
+                          <a className="bz-btn-buy" href={p.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={(e) => handleBuyClick(p, e)}>BUY NOW</a>
                         </div>
                       </div>
                     </div>
@@ -1129,7 +1126,7 @@ export default function Home() {
 
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
-                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={() => handleBuyClick(selected)}>BUY NOW →</a>
+                  <a className="bz-btn-buy" href={selected.affiliate_url} target="_blank" rel="noopener noreferrer" onClick={(e) => handleBuyClick(selected, e)}>BUY NOW →</a>
                 </div>
 
                 <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
@@ -1167,7 +1164,7 @@ export default function Home() {
 
                 {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
                   <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
-                  <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Naya Password" />
+                  <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" />
                   <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
                 </div>}
 
@@ -1179,7 +1176,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ================= RESET PASSWORD MODAL (Email Link se aane wale ke liye) ================= */}
+        {/* ================= RESET PASSWORD MODAL ================= */}
         {showResetPassword && (
           <div className="bz-modal">
             <div className="bz-modal-card" style={{ maxWidth: 380 }}>
@@ -1188,7 +1185,7 @@ export default function Home() {
                   <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>🔑</div>
                   <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Reset Password</h2>
                   <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
-                    Naya password set karo (min 6 characters)
+                    Set new password (min 6 characters)
                   </p>
                 </div>
 
@@ -1197,7 +1194,7 @@ export default function Home() {
                   type="password"
                   value={newPassword}
                   onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Naya Password (min 6)"
+                  placeholder="New Password (min 6)"
                 />
 
                 <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleResetPassword}>
@@ -1224,8 +1221,8 @@ export default function Home() {
               <div style={{ padding: 22 }}>
                 {!isAdmin ? (
                   <div style={{ textAlign: "center", padding: 20 }}>
-                    <p style={{ fontSize: 14, fontWeight: 800 }}>Sirf Admin khol sakta hai!</p>
-                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Pehle run4ravish@gmail.com se Login karo, fir Admin khulega.</p>
+                    <p style={{ fontSize: 14, fontWeight: 800 }}>Only Admin can open this!</p>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Login with run4ravish@gmail.com first, then Admin will open.</p>
                   </div>
                 ) : (
                   <>
@@ -1283,7 +1280,7 @@ export default function Home() {
                             </div>
                           </div>
                         ))}
-                        {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>Koi user nahi mila. Pehle koi Signup karega tab dikhega.</p>}
+                        {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>No users found. Someone needs to signup first.</p>}
                       </div>
                     )}
 
@@ -1322,7 +1319,6 @@ export default function Home() {
                     {/* === CLICKS TAB === */}
                     {adminTab === "clicks" && (
                       <div>
-                        {/* Filter Buttons */}
                         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
                           {[
                             { key: "daily", label: "📅 Daily" },
@@ -1350,7 +1346,6 @@ export default function Home() {
                           ))}
                         </div>
 
-                        {/* Stats Cards */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                           <div style={{ background: "linear-gradient(135deg,#eef2ff,#f5f3ff)", border: "1px solid #c7d2fe", borderRadius: 14, padding: 14 }}>
                             <div style={{ fontSize: 11, color: "#64748b", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
@@ -1370,7 +1365,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* User Wise List */}
                         <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, color: "#334155" }}>
                           👥 User-wise Breakdown ({getUserWiseClicks(clickFilter).length} users)
                         </h4>
@@ -1379,7 +1373,7 @@ export default function Home() {
                           <div style={{ textAlign: "center", padding: 40, background: "#f8fafc", borderRadius: 12 }}>
                             <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
                             <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>
-                              Is period me koi click nahi hua
+                              No clicks in this period
                             </p>
                           </div>
                         ) : (
@@ -1449,9 +1443,9 @@ export default function Home() {
               <div style={{ padding: 24, textAlign: "center" }}>
                 <div style={{ fontSize: 48 }}>🪙</div>
                 <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
-                <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>Tumhare paas <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b> hai</p>
-                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Aaj ka +10 Coin Claim Karo</button>
-                <p style={{ fontSize: 11, color: "#94a3b8" }}>Roz 1 baar claim kar sakte ho</p>
+                <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>You have <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b></p>
+                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Claim Today's +10 Coin</button>
+                <p style={{ fontSize: 11, color: "#94a3b8" }}>You can claim once per day</p>
                 <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
                     <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
@@ -1466,7 +1460,7 @@ export default function Home() {
                     <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
                   </div>
                 </div>
-                <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Band Karo</button>
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Close</button>
               </div>
             </div>
           </div>
