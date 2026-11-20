@@ -541,13 +541,23 @@ export default function Home() {
   const claimCoins = async () => {
     if (!user) return notify("Pehle Login karo!", "error");
     const today = new Date().toISOString().slice(0, 10);
-    const { data } = await supabase.from("coin_claims").select("id").eq("email", user.email).eq("claim_date", today).limit(1);
-    if (data && data.length > 0) return notify("Aaj ka coin pehle se claim kar liya!", "error");
-    const newTotal = (coins || 0) + 10;
-    try {
-      await supabase.from("coin_claims").insert([{ email: user.email, coins: 10, claim_date: today }]);
-      await supabase.from("profiles").update({ coins: newTotal }).eq("id", user.id);
-    } catch (e) { console.log("coin db error", e); }
+    const claimCoins = async () => {
+  if (!user) return notify("Pehle Login karo!", "error");
+  const today = new Date().toISOString().slice(0, 10);
+
+  // 1. Check karo aaj claim kiya hai kya - profiles se hi
+  const { data: prof } = await supabase.from("profiles").select("last_claim_date, coins").eq("id", user.id).single();
+  if (prof?.last_claim_date === today) return notify("Aaj ka coin pehle se claim kar liya!", "error");
+
+  const newTotal = (prof?.coins || coins || 0) + 10;
+
+  // 2. Coins + Date dono ek saath save karo
+  const { error } = await supabase.from("profiles").update({ coins: newTotal, last_claim_date: today }).eq("id", user.id);
+  if (error) return notify("Coin save nahi hua: " + error.message, "error");
+
+  setCoins(newTotal);
+  notify("🎉 +10 Coins Claim Ho Gaye!");
+};
     setCoins(newTotal);
     notify("🎉 +10 Coins Claim Ho Gaye!");
   };
