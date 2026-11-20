@@ -277,6 +277,7 @@ export default function Home() {
   const [showWish, setShowWish] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState("");
@@ -358,6 +359,17 @@ export default function Home() {
     setNewPassword("");
   };
 
+  /* ---------- RESET PASSWORD (link se aane wale user ke liye) ---------- */
+  const handleResetPassword = async () => {
+    if (newPassword.length < 6) return notify("Password kam se kam 6 ka hona chahiye", "error");
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) return notify(error.message, "error");
+    notify("Password badal gaya! Ab Login karo ✅");
+    setShowResetPassword(false);
+    setNewPassword("");
+    setShowLogin(true);
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null); setIsAdmin(false); setCoins(0);
@@ -410,6 +422,14 @@ export default function Home() {
       }
     });
 
+    // Password Reset Link pakadne ke liye
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setShowResetPassword(true);
+        setShowLogin(false);
+      }
+    });
+
     const loadProducts = async () => {
       setLoading(true);
       const { data, error } = await supabase
@@ -438,6 +458,10 @@ export default function Home() {
       const sw = localStorage.getItem("bazaru_wish");
       if (sw) setWishlist(JSON.parse(sw));
     } catch (e) {}
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
   }, []);
 
   /* ---------- COUNTDOWN ---------- */
@@ -470,7 +494,7 @@ export default function Home() {
   }, [toast]);
 
   /* ---------- SCROLL LOCK ---------- */
-  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || !!selected;
+  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || showResetPassword || !!selected;
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.style.overflow = anyOpen ? "hidden" : "";
@@ -1107,6 +1131,39 @@ export default function Home() {
                 </div>}
 
                 <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= RESET PASSWORD MODAL (Email Link se aane wale ke liye) ================= */}
+        {showResetPassword && (
+          <div className="bz-modal">
+            <div className="bz-modal-card" style={{ maxWidth: 380 }}>
+              <div style={{ padding: 28 }}>
+                <div style={{ textAlign: "center", marginBottom: 18 }}>
+                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>🔑</div>
+                  <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Reset Password</h2>
+                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
+                    Naya password set karo (min 6 characters)
+                  </p>
+                </div>
+
+                <input
+                  className="bz-input"
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Naya Password (min 6)"
+                />
+
+                <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleResetPassword}>
+                  SET NEW PASSWORD
+                </button>
+
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setShowResetPassword(false); setNewPassword(""); }}>
                   Cancel
                 </button>
               </div>
