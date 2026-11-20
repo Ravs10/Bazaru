@@ -527,7 +527,6 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-  const handleBuyClick = async (p) => {
     const handleBuyClick = async (p) => {
     try {
       await supabase.from("clicks").insert([{
@@ -1330,4 +1329,4 @@ export default function Home() {
     </>
   );
 }
-          } 
+          
