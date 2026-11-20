@@ -287,7 +287,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
-  const [adminTab, setAdminTab] = useState("products"); // products | users | sliders
+  const [adminTab, setAdminTab] = useState("products"); // products | users | sliders | clicks
   const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(null);
   const [slide, setSlide] = useState(0);
@@ -299,6 +299,10 @@ export default function Home() {
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
   const [clickCount, setClickCount] = useState(0);
+
+  // === ADMIN CLICKS DASHBOARD STATE ===
+  const [clicks, setClicks] = useState([]);
+  const [clickFilter, setClickFilter] = useState("daily"); // daily, weekly, monthly, yearly
 
   /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
@@ -407,6 +411,39 @@ export default function Home() {
     if (!user) return notify("Pehle Login karo!", "error");
     if (user.role !== "admin" && user.email !== ADMIN_EMAIL) return notify("Sirf Admin khol sakta hai!", "error");
     setIsAdmin(true); loadAllUsers(); setShowAdmin(true);
+  };
+
+  // === ADMIN CLICKS HELPERS ===
+  const loadClicks = async () => {
+    const { data } = await supabase.from("clicks").select("*").order("created_at", { ascending: false });
+    setClicks(data || []);
+  };
+
+  const isInPeriod = (dateStr, period) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    const now = new Date();
+    if (period === "daily") return d.toDateString() === now.toDateString();
+    if (period === "weekly") {
+      const diff = (now - d) / (1000 * 60 * 60 * 24);
+      return diff < 7;
+    }
+    if (period === "monthly") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    if (period === "yearly") return d.getFullYear() === now.getFullYear();
+    return true;
+  };
+
+  const getUserWiseClicks = (period) => {
+    const filtered = clicks.filter(c => isInPeriod(c.created_at, period));
+    const map = {};
+    filtered.forEach(c => {
+      const key = c.email || "Guest";
+      if (!map[key]) map[key] = { email: key, count: 0, products: {} };
+      map[key].count++;
+      const pname = c.product_title || "Unknown";
+      map[key].products[pname] = (map[key].products[pname] || 0) + 1;
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
   };
 
   /* ---------- INIT - SUPABASE SE LOAD ---------- */
@@ -527,7 +564,7 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-    const handleBuyClick = async (p) => {
+  const handleBuyClick = async (p) => {
     try {
       await supabase.from("clicks").insert([{
         product_id: p.id,
@@ -1178,7 +1215,7 @@ export default function Home() {
         {/* ================= ADMIN MODAL ================= */}
         {showAdmin && (
           <div className="bz-modal" onClick={() => setShowAdmin(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 660 }} onClick={e => e.stopPropagation()}>
+            <div className="bz-modal-card" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
               <div className="bz-drawer-head">
                 <h3>⚙️ Admin Panel - {user?.email}</h3>
                 <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
@@ -1192,9 +1229,9 @@ export default function Home() {
                   </div>
                 ) : (
                   <>
-                    <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                      {["products", "users", "sliders"].map(t => (
-                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); }} style={{ flex: 1, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
+                    <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                      {["products", "users", "sliders", "clicks"].map(t => (
+                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
                       ))}
                     </div>
 
@@ -1281,6 +1318,123 @@ export default function Home() {
                         </div>
                       </div>
                     )}
+
+                    {/* === CLICKS TAB === */}
+                    {adminTab === "clicks" && (
+                      <div>
+                        {/* Filter Buttons */}
+                        <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                          {[
+                            { key: "daily", label: "📅 Daily" },
+                            { key: "weekly", label: "📆 Weekly" },
+                            { key: "monthly", label: "🗓️ Monthly" },
+                            { key: "yearly", label: "📊 Yearly" },
+                          ].map(f => (
+                            <button
+                              key={f.key}
+                              onClick={() => setClickFilter(f.key)}
+                              style={{
+                                flex: 1,
+                                minWidth: 80,
+                                padding: "9px",
+                                borderRadius: 9,
+                                background: clickFilter === f.key ? "#7c3aed" : "#f1f5f9",
+                                color: clickFilter === f.key ? "#fff" : "#333",
+                                fontWeight: 800,
+                                fontSize: 12,
+                                transition: ".2s"
+                              }}
+                            >
+                              {f.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                          <div style={{ background: "linear-gradient(135deg,#eef2ff,#f5f3ff)", border: "1px solid #c7d2fe", borderRadius: 14, padding: 14 }}>
+                            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
+                              {clickFilter} Clicks
+                            </div>
+                            <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 4 }}>
+                              {clicks.filter(c => isInPeriod(c.created_at, clickFilter)).length}
+                            </div>
+                          </div>
+                          <div style={{ background: "linear-gradient(135deg,#fef3c7,#ffedd5)", border: "1px solid #fcd34d", borderRadius: 14, padding: 14 }}>
+                            <div style={{ fontSize: 11, color: "#92400e", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
+                              All Time Clicks
+                            </div>
+                            <div style={{ fontSize: 26, fontWeight: 900, color: "#ea580c", marginTop: 4 }}>
+                              {clicks.length}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* User Wise List */}
+                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, color: "#334155" }}>
+                          👥 User-wise Breakdown ({getUserWiseClicks(clickFilter).length} users)
+                        </h4>
+
+                        {getUserWiseClicks(clickFilter).length === 0 ? (
+                          <div style={{ textAlign: "center", padding: 40, background: "#f8fafc", borderRadius: 12 }}>
+                            <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+                            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>
+                              Is period me koi click nahi hua
+                            </p>
+                          </div>
+                        ) : (
+                          <div style={{ maxHeight: 340, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                            {getUserWiseClicks(clickFilter).map((u, idx) => (
+                              <div key={u.email} style={{
+                                border: "1px solid #e2e8f0",
+                                borderRadius: 12,
+                                padding: 12,
+                                background: "#fff",
+                                boxShadow: "0 2px 6px rgba(15,23,42,.04)"
+                              }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                    <div style={{
+                                      width: 26, height: 26, borderRadius: "50%",
+                                      background: idx < 3 ? "linear-gradient(135deg,#fbbf24,#ea580c)" : "linear-gradient(135deg,#6366f1,#a855f7)",
+                                      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+                                      fontSize: 11, fontWeight: 800
+                                    }}>
+                                      {idx + 1}
+                                    </div>
+                                    <b style={{ fontSize: 13, color: "#0f172a" }}>{u.email}</b>
+                                  </div>
+                                  <span style={{
+                                    background: "linear-gradient(135deg,#16a34a,#15803d)",
+                                    color: "#fff", padding: "3px 10px", borderRadius: 999,
+                                    fontSize: 11, fontWeight: 800
+                                  }}>
+                                    {u.count} clicks
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.5 }}>
+                                  {Object.entries(u.products).map(([p, c], i, arr) => (
+                                    <span key={p}>
+                                      <span style={{ color: "#334155", fontWeight: 700 }}>{p}</span>
+                                      <span style={{ color: "#7c3aed", fontWeight: 800 }}> ({c}×)</span>
+                                      {i < arr.length - 1 ? " • " : ""}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <button
+                          className="bz-ghost"
+                          style={{ width: "100%", marginTop: 12 }}
+                          onClick={loadClicks}
+                        >
+                          🔄 Refresh
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -1329,4 +1483,3 @@ export default function Home() {
     </>
   );
 }
-          
