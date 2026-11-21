@@ -416,8 +416,12 @@ export default function Home() {
   };
 
   // === MAKE ADMIN (by email) ===
-  const makeAdmin = async (targetEmail, makeAdminVal) => {
-    if (targetEmail === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
+
+const makeAdmin = async (targetEmail, makeAdminVal) => {
+  // SIRF Super Admin hi Admin bana / hata sakta hai
+  if (!isSuperAdmin) return notify("Only Super Admin can do this!", "error");
+  if (targetEmail === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
     const { error } = await supabase
       .from("profiles")
       .update({ is_admin: makeAdminVal })
