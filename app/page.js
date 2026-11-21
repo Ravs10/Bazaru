@@ -431,12 +431,21 @@ const makeAdmin = async (targetEmail, makeAdminVal) => {
     notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
   };
 
-  const deleteUserProfile = async (u) => {
-    if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
-    if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
-    await supabase.from("profiles").delete().eq("id", u.id);
-    loadAllUsers(); notify("User deleted", "error");
-  };
+  const isSuperAdmin = user?.email === ADMIN_EMAIL;
+
+const deleteUserProfile = async (u) => {
+  // 1. Pehle Check karo - Kya Delete karne wala Super Admin hai?
+  if (!isSuperAdmin) return notify("Only Super Admin can delete users!", "error");
+  
+  // 2. Super Admin ko koi Delete nahi kar sakta
+  if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
+  
+  if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
+  
+  await supabase.from("profiles").delete().eq("id", u.id);
+  loadAllUsers(); 
+  notify("User deleted", "error");
+};
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
     if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
