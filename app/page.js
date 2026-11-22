@@ -272,6 +272,7 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
+  const [approvals, setApprovals] = useState([]);
   const [adminTab, setAdminTab] = useState("products");
   const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(null);
@@ -292,11 +293,11 @@ export default function Home() {
   /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  /* ---------- LOAD PROFILE (overwrite protection) ---------- */
+  /* ---------- LOAD PROFILE (with overwrite protection) ---------- */
   const loadProfile = async (authUser) => {
     if (!authUser) return null;
 
-    // 1. Pehle email se check karo - purane user ko overwrite mat karo
+    // 1. First check by email - do NOT overwrite existing user
     const { data: existing } = await supabase
       .from("profiles")
       .select("*")
@@ -305,7 +306,7 @@ export default function Home() {
 
     if (existing) return existing;
 
-    // 2. Sirf NAYA user insert karo
+    // 2. Only insert if user is NEW
     const { data: newProf, error } = await supabase
       .from("profiles")
       .insert([{
@@ -406,50 +407,105 @@ export default function Home() {
     if (data) setAllUsers(data);
   };
 
+  const loadApprovals = async () => {
+    const { data } = await supabase.from("approvals").select("*").eq("status", "pending").order("created_at", { ascending: false });
+    if (data) setApprovals(data);
+  };
+
+  // === SEND REQUEST - for Admin ===
+  const sendApprovalRequest = async (type, targetUser, extra = {}) => {
+    const { error } = await supabase.from("approvals").insert([{
+      type: type,
+      requested_by: user.email,
+      target_email: targetUser.email,
+      target_id: targetUser.id,
+      amount: extra.amount || 0,
+      make_admin: extra.make_admin || false,
+      status: 'pending'
+    }]);
+    if (error) return notify("Error: " + error.message, "error");
+    notify("Request sent to Super Admin! ✅ Wait for approval");
+    loadApprovals();
+  };
+
+  // === APPROVE - Super Admin only ===
+  const approveRequest = async (req) => {
+    if (!isSuperAdmin) return notify("Only Super Admin can approve!", "error");
+    if (req.type === 'block') {
+      const { data: prof } = await supabase.from("profiles").select("is_blocked").eq("id", req.target_id).single();
+      await supabase.from("profiles").update({ is_blocked: !prof?.is_blocked }).eq("id", req.target_id);
+    }
+    if (req.type === 'coins') {
+      const { data: prof } = await supabase.from("profiles").select("coins").eq("id", req.target_id).single();
+      await supabase.from("profiles").update({ coins: (prof?.coins || 0) + req.amount }).eq("id", req.target_id);
+    }
+    if (req.type === 'make_admin') {
+      await supabase.from("profiles").update({ is_admin: req.make_admin }).eq("id", req.target_id);
+    }
+    if (req.type === 'delete_user') {
+      await supabase.from("profiles").delete().eq("id", req.target_id);
+    }
+    await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
+    notify("Approved ✅ Action completed!");
+    loadAllUsers(); loadApprovals();
+  };
+
+  const rejectRequest = async (req) => {
+    if (!isSuperAdmin) return notify("Only Super Admin can reject!", "error");
+    await supabase.from("approvals").update({ status: 'rejected' }).eq("id", req.id);
+    notify("Rejected ❌ Request cancelled!", "error");
+    loadApprovals();
+  };
+
+  // === 4 ACTIONS - Now go through approval for non-super-admin ===
   const toggleBlock = async (u) => {
-    await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
-    loadAllUsers();
-    notify(u.is_blocked ? "User Unblocked" : "User Blocked", "error");
+    if (isSuperAdmin) {
+      await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
+      loadAllUsers(); notify(u.is_blocked ? "User Unblocked" : "User Blocked", "error");
+    } else {
+      await sendApprovalRequest('block', u);
+    }
   };
 
   const addCoinsToUser = async (u, amt) => {
-    const newCoins = (u.coins || 0) + amt;
-    await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
-    if (user?.id === u.id) setCoins(newCoins);
-    loadAllUsers(); notify(`${amt} coins added ✅`);
+    if (isSuperAdmin) {
+      const newCoins = (u.coins || 0) + amt;
+      await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
+      if (user?.id === u.id) setCoins(newCoins);
+      loadAllUsers(); notify(`${amt} coins added ✅`);
+    } else {
+      await sendApprovalRequest('coins', u, { amount: amt });
+    }
   };
 
-  // === MAKE ADMIN (by email) ===
   const makeAdmin = async (targetEmail, makeAdminVal) => {
-    // SIRF Super Admin hi Admin bana / hata sakta hai
-    if (!isSuperAdmin) return notify("Only Super Admin can do this!", "error");
     if (targetEmail === ADMIN_EMAIL) return notify("Cannot change Super Admin's role!", "error");
-    const { error } = await supabase
-      .from("profiles")
-      .update({ is_admin: makeAdminVal })
-      .eq("email", targetEmail);
-    if (error) return notify("Error: " + error.message, "error");
-    loadAllUsers();
-    notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
+    if (isSuperAdmin) {
+      const { error } = await supabase.from("profiles").update({ is_admin: makeAdminVal }).eq("email", targetEmail);
+      if (error) return notify("Error: " + error.message, "error");
+      loadAllUsers(); notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
+    } else {
+      const target = allUsers.find(x => x.email === targetEmail);
+      if (!target) return notify("User not found!", "error");
+      await sendApprovalRequest('make_admin', target, { make_admin: makeAdminVal });
+    }
   };
 
   const deleteUserProfile = async (u) => {
-    // 1. Pehle Check karo - Kya Delete karne wala Super Admin hai?
-    if (!isSuperAdmin) return notify("Only Super Admin can delete users!", "error");
-    
-    // 2. Super Admin ko koi Delete nahi kar sakta
     if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
-    
     if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
-    
-    await supabase.from("profiles").delete().eq("id", u.id);
-    loadAllUsers(); 
-    notify("User deleted", "error");
+    if (isSuperAdmin) {
+      await supabase.from("profiles").delete().eq("id", u.id);
+      loadAllUsers(); notify("User deleted", "error");
+    } else {
+      await sendApprovalRequest('delete_user', u);
+    }
   };
+
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
     if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
-    setIsAdmin(true); loadAllUsers(); setShowAdmin(true);
+    setIsAdmin(true); loadAllUsers(); loadApprovals(); setShowAdmin(true);
   };
 
   // === ADMIN CLICKS HELPERS ===
@@ -627,13 +683,11 @@ export default function Home() {
     if (!user) return notify("Please Login first!", "error");
     const today = new Date().toISOString().slice(0, 10);
 
-    // 1. Check if already claimed today - from profiles
     const { data: prof } = await supabase.from("profiles").select("last_claim_date, coins").eq("id", user.id).single();
     if (prof?.last_claim_date === today) return notify("Today's coin already claimed!", "error");
 
     const newTotal = (prof?.coins || coins || 0) + 10;
 
-    // 2. Save coins + date together
     const { error } = await supabase.from("profiles").update({ coins: newTotal, last_claim_date: today }).eq("id", user.id);
     if (error) return notify("Could not save coin: " + error.message, "error");
 
@@ -1281,6 +1335,9 @@ export default function Home() {
                       {["products", "users", "sliders", "clicks"].map(t => (
                         <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
                       ))}
+                      <button onClick={() => { setAdminTab("approvals"); loadApprovals(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "approvals" ? "#7c3aed" : "#f1f5f9", color: adminTab === "approvals" ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>
+                        Approvals {approvals.length > 0 ? `(${approvals.length})` : ""}
+                      </button>
                     </div>
 
                     {/* === PRODUCTS TAB === */}
@@ -1478,6 +1535,32 @@ export default function Home() {
                         >
                           🔄 Refresh
                         </button>
+                      </div>
+                    )}
+
+                    {/* === APPROVALS TAB === */}
+                    {adminTab === "approvals" && (
+                      <div>
+                        {approvals.length === 0 ? (
+                          <p style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>No pending requests! 🎉</p>
+                        ) : approvals.map(req => (
+                          <div key={req.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                            <div style={{ fontSize: 13, fontWeight: 800 }}>{req.type.toUpperCase()} Request</div>
+                            <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
+                              From: <b>{req.requested_by}</b> → Target: <b>{req.target_email}</b>
+                              {req.type === 'coins' && <span> • Coins: <b>+{req.amount}</b></span>}
+                              {req.type === 'make_admin' && <span> • Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
+                            </div>
+                            {isSuperAdmin ? (
+                              <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                                <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => approveRequest(req)}>✅ Approve</button>
+                                <button className="bz-ghost" style={{ padding: "8px 14px", fontSize: 12, background: "#fee2e2", color: "#dc2626" }} onClick={() => rejectRequest(req)}>❌ Reject</button>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>⏳ Waiting for Super Admin approval...</div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </>
