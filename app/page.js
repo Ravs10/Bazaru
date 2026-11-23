@@ -273,6 +273,8 @@ export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [approvals, setApprovals] = useState([]);
+  const [hiddenProducts, setHiddenProducts] = useState([]);
+  const [showHiddenTab, setShowHiddenTab] = useState(false);
   const [adminTab, setAdminTab] = useState("products");
   const [userSearch, setUserSearch] = useState("");
   const [page, setPage] = useState(null);
@@ -411,9 +413,10 @@ export default function Home() {
   };
 
   const loadHiddenProducts = async () => {
-    const { data } = await supabase.from("products").select("*").eq("is_active", false).order("created_at", { ascending: false });
-    if (!data || data.length === 0) return notify("No hidden products!");
-    alert("Hidden Products:\n\n" + data.map(d => "• " + d.title).join("\n"));
+    const { data, error } = await supabase.from("products").select("*")
+      .eq("is_active", false).order("created_at", { ascending: false });
+    if (error) return notify("Could not load hidden products: " + error.message, "error");
+    setHiddenProducts(data || []);
   };
 
   // === SEND REQUEST - for Admin ===
@@ -450,9 +453,10 @@ export default function Home() {
       await supabase.from("profiles").delete().eq("id", req.target_id);
     }
     if (req.type === 'delete_product') {
-      await supabase.from("products").delete().eq("id", req.target_id);
-      const { data: freshProducts } = await supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false });
-      if (freshProducts) setProducts(freshProducts);
+      const { error } = await supabase.from("products").delete().eq("id", req.target_id);
+      if (error) return notify("Product delete failed: " + error.message, "error");
+      setProducts(prev => prev.filter(x => x.id !== req.target_id));
+      setHiddenProducts(prev => prev.filter(x => x.id !== req.target_id));
     }
     await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
     notify("Approved ✅ Action completed!");
@@ -514,7 +518,7 @@ export default function Home() {
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
     if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
-    setIsAdmin(true); loadAllUsers(); loadApprovals(); setShowAdmin(true);
+    setIsAdmin(true); loadAllUsers(); loadApprovals(); loadHiddenProducts(); setShowAdmin(true);
   };
 
   // === ADMIN CLICKS HELPERS ===
@@ -753,32 +757,37 @@ export default function Home() {
     notify("Slider deleted", "error");
   };
 
-  // === HIDE - Only hides from list, stays in Database ===
+  // === HIDE - Remove from active list, keep in database ===
   const hideProduct = async (id) => {
-    await supabase.from("products").update({ is_active: false }).eq("id", id);
-    setProducts(products.filter(x => x.id !== id));
-    notify("Product Hidden 👁️‍🗨️ - You can Show it again", "error");
+    const product = products.find(x => x.id === id);
+    if (!product) return;
+    const { error } = await supabase.from("products").update({ is_active: false }).eq("id", id);
+    if (error) return notify("Could not hide product: " + error.message, "error");
+    setProducts(prev => prev.filter(x => x.id !== id));
+    setHiddenProducts(prev => [product, ...prev.filter(x => x.id !== id)]);
+    notify("Product Hidden 👁️ - Wapas Show kar sakte ho", "error");
   };
 
-  // === SHOW - Bring back hidden product ===
-  const showProduct = async (id) => {
-    await supabase.from("products").update({ is_active: true }).eq("id", id);
-    notify("Product is now visible ✅");
-    const { data } = await supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false });
-    if (data) setProducts(data);
+  // === SHOW - Restore hidden product ===
+  const showProduct = async (p) => {
+    const { error } = await supabase.from("products").update({ is_active: true }).eq("id", p.id);
+    if (error) return notify("Could not show product: " + error.message, "error");
+    setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
+    setProducts(prev => [p, ...prev.filter(x => x.id !== p.id)]);
+    notify("Product wapas Show ho gaya ✅");
   };
 
-  // === DELETE - Permanent delete, with approval ===
+  // === DELETE - Permanent delete; non-super-admin requires approval ===
   const deleteProduct = async (p) => {
-    if (!confirm(`Are you sure you want to delete? ${p.title} will be gone forever!`)) return;
+    if (!confirm(`Pakka Delete karna hai? ${p.title} hamesha ke liye ud jayega!`)) return;
 
     if (isSuperAdmin) {
-      // Super Admin - instant Permanent Delete
-      await supabase.from("products").delete().eq("id", p.id);
-      setProducts(products.filter(x => x.id !== p.id));
-      notify("Product permanently deleted 🗑️", "error");
+      const { error } = await supabase.from("products").delete().eq("id", p.id);
+      if (error) return notify("Delete failed: " + error.message, "error");
+      setProducts(prev => prev.filter(x => x.id !== p.id));
+      setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
+      notify("Product Permanent Delete ho gaya 🗑️", "error");
     } else {
-      // Regular admin - Request goes to Super Admin
       const { error } = await supabase.from("approvals").insert([{
         type: 'delete_product',
         requested_by: user.email,
@@ -787,7 +796,8 @@ export default function Home() {
         status: 'pending'
       }]);
       if (error) return notify("Error: " + error.message, "error");
-      notify("Delete request sent to Super Admin! ✅ Wait for approval");
+      notify("Delete Request Super Admin ko bhej di! ✅ Approval ka wait karo");
+      loadApprovals();
     }
   };
 
@@ -1399,31 +1409,34 @@ export default function Home() {
                           <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                         </div>
 
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 0 10px", flexWrap: "wrap", gap: 8 }}>
-                          <h4 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>📦 Manage Products ({products.length})</h4>
-                          <button onClick={loadHiddenProducts} style={{ background: "#eef2ff", color: "#4f46e5", padding: "8px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
-                            👁️ View Hidden Products
+                        <div style={{ display: "flex", gap: 8, margin: "20px 0 12px", flexWrap: "wrap" }}>
+                          <button onClick={() => setShowHiddenTab(false)} style={{ background: showHiddenTab ? "#f1f5f9" : "#4f46e5", color: showHiddenTab ? "#333" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
+                            ✅ Active Products ({products.length})
+                          </button>
+                          <button onClick={() => { setShowHiddenTab(true); loadHiddenProducts(); }} style={{ background: showHiddenTab ? "#f59e0b" : "#f1f5f9", color: showHiddenTab ? "#fff" : "#333", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
+                            👁️ Hidden Products ({hiddenProducts.length})
                           </button>
                         </div>
-                        <div style={{ maxHeight: 300, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                          {products.map(p => (
-                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
+                        <div style={{ maxHeight: 340, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
+                          {(showHiddenTab ? hiddenProducts : products).length === 0 ? (
+                            <p style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
+                              {showHiddenTab ? "No hidden products." : "No active products."}
+                            </p>
+                          ) : (showHiddenTab ? hiddenProducts : products).map(p => (
+                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
                               <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0 }}>{p.title} — <b>₹{p.price}</b></span>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                                <button
-                                  onClick={() => hideProduct(p.id)}
-                                  style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}
-                                >
-                                  👁️ Hide
-                                </button>
-                                <button
-                                  onClick={() => deleteProduct(p)}
-                                  style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}
-                                >
-                                  🗑️ Delete
-                                </button>
-                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} — <b>₹{p.price}</b></span>
+                              {showHiddenTab ? (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Show Again</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>👁️ Hide</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
