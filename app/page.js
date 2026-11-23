@@ -450,7 +450,9 @@ export default function Home() {
       await supabase.from("profiles").update({ is_admin: req.make_admin }).eq("id", req.target_id);
     }
     if (req.type === 'delete_user') {
-      await supabase.from("profiles").delete().eq("id", req.target_id);
+      // Delete nahi, user ko block / inactive karo - Product Hide jaisa!
+      const { error } = await supabase.from("profiles").update({ is_blocked: true }).eq("id", req.target_id);
+      if (error) return notify("User block failed: " + error.message, "error");
     }
     if (req.type === 'delete_product') {
       const { error } = await supabase.from("products").delete().eq("id", req.target_id);
@@ -506,13 +508,24 @@ export default function Home() {
 
   const deleteUserProfile = async (u) => {
     if (u.email === ADMIN_EMAIL) return notify("Cannot delete Super Admin!", "error");
-    if (!confirm(`Are you sure you want to delete ${u.email}?`)) return;
+    if (!confirm(`${u.email} ko Block / Inactive karna hai?`)) return;
     if (isSuperAdmin) {
-      await supabase.from("profiles").delete().eq("id", u.id);
-      loadAllUsers(); notify("User deleted", "error");
+      // Direct Delete nahi, Block karo!
+      const { error } = await supabase.from("profiles").update({ is_blocked: true }).eq("id", u.id);
+      if (error) return notify("User block failed: " + error.message, "error");
+      await loadAllUsers();
+      notify("User Blocked / Inactive ✅ Login nahi kar payega", "error");
     } else {
       await sendApprovalRequest('delete_user', u);
     }
+  };
+
+  // === UNBLOCK USER - Product Show jaisa! ===
+  const unblockUser = async (u) => {
+    const { error } = await supabase.from("profiles").update({ is_blocked: false }).eq("id", u.id);
+    if (error) return notify("User unblock failed: " + error.message, "error");
+    await loadAllUsers();
+    notify("User Unblocked ✅ Ab Login kar payega");
   };
 
   const handleAdminOpen = () => {
@@ -1452,11 +1465,21 @@ export default function Home() {
                             <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => toggleBlock(u)}>{u.is_blocked ? "UNBLOCK" : "BLOCK"}</button>
+                              {/* Agar User Blocked hai to INACTIVE badge aur Unblock button dikhega */}
+                              {u.is_blocked ? (
+                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                  <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>⛔ INACTIVE</span>
+                                  <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: "flex", gap: 6 }}>
+                                  <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
+                                  <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                </div>
+                              )}
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => makeAdmin(u.email, !u.is_admin)}>{u.is_admin ? "Remove Admin" : "Make Admin"}</button>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11, color: "#dc2626" }} onClick={() => deleteUserProfile(u)}>DELETE</button>
                             </div>
                           </div>
                         ))}
