@@ -297,7 +297,6 @@ export default function Home() {
   const loadProfile = async (authUser) => {
     if (!authUser) return null;
 
-    // 1. First check by email - do NOT overwrite existing user
     const { data: existing } = await supabase
       .from("profiles")
       .select("*")
@@ -306,7 +305,6 @@ export default function Home() {
 
     if (existing) return existing;
 
-    // 2. Only insert if user is NEW
     const { data: newProf, error } = await supabase
       .from("profiles")
       .insert([{
@@ -412,6 +410,12 @@ export default function Home() {
     if (data) setApprovals(data);
   };
 
+  const loadHiddenProducts = async () => {
+    const { data } = await supabase.from("products").select("*").eq("is_active", false).order("created_at", { ascending: false });
+    if (!data || data.length === 0) return notify("No hidden products!");
+    alert("Hidden Products:\n\n" + data.map(d => "• " + d.title).join("\n"));
+  };
+
   // === SEND REQUEST - for Admin ===
   const sendApprovalRequest = async (type, targetUser, extra = {}) => {
     const { error } = await supabase.from("approvals").insert([{
@@ -444,6 +448,11 @@ export default function Home() {
     }
     if (req.type === 'delete_user') {
       await supabase.from("profiles").delete().eq("id", req.target_id);
+    }
+    if (req.type === 'delete_product') {
+      await supabase.from("products").delete().eq("id", req.target_id);
+      const { data: freshProducts } = await supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false });
+      if (freshProducts) setProducts(freshProducts);
     }
     await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
     notify("Approved ✅ Action completed!");
@@ -744,10 +753,42 @@ export default function Home() {
     notify("Slider deleted", "error");
   };
 
-  const deleteProduct = async (id) => {
+  // === HIDE - Only hides from list, stays in Database ===
+  const hideProduct = async (id) => {
     await supabase.from("products").update({ is_active: false }).eq("id", id);
     setProducts(products.filter(x => x.id !== id));
-    notify("Product hidden", "error");
+    notify("Product Hidden 👁️‍🗨️ - You can Show it again", "error");
+  };
+
+  // === SHOW - Bring back hidden product ===
+  const showProduct = async (id) => {
+    await supabase.from("products").update({ is_active: true }).eq("id", id);
+    notify("Product is now visible ✅");
+    const { data } = await supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false });
+    if (data) setProducts(data);
+  };
+
+  // === DELETE - Permanent delete, with approval ===
+  const deleteProduct = async (p) => {
+    if (!confirm(`Are you sure you want to delete? ${p.title} will be gone forever!`)) return;
+
+    if (isSuperAdmin) {
+      // Super Admin - instant Permanent Delete
+      await supabase.from("products").delete().eq("id", p.id);
+      setProducts(products.filter(x => x.id !== p.id));
+      notify("Product permanently deleted 🗑️", "error");
+    } else {
+      // Regular admin - Request goes to Super Admin
+      const { error } = await supabase.from("approvals").insert([{
+        type: 'delete_product',
+        requested_by: user.email,
+        target_email: p.title,
+        target_id: p.id,
+        status: 'pending'
+      }]);
+      if (error) return notify("Error: " + error.message, "error");
+      notify("Delete request sent to Super Admin! ✅ Wait for approval");
+    }
   };
 
   const checkout = () => {
@@ -1358,13 +1399,31 @@ export default function Home() {
                           <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                         </div>
 
-                        <h4 style={{ fontSize: 15, fontWeight: 800, margin: "20px 0 10px" }}>📦 Manage Products ({products.length})</h4>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "20px 0 10px", flexWrap: "wrap", gap: 8 }}>
+                          <h4 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>📦 Manage Products ({products.length})</h4>
+                          <button onClick={loadHiddenProducts} style={{ background: "#eef2ff", color: "#4f46e5", padding: "8px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
+                            👁️ View Hidden Products
+                          </button>
+                        </div>
                         <div style={{ maxHeight: 300, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
                           {products.map(p => (
                             <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9" }}>
                               <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
                               <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 0 }}>{p.title} — <b>₹{p.price}</b></span>
-                              <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteProduct(p.id)}>Delete</button>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                <button
+                                  onClick={() => hideProduct(p.id)}
+                                  style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}
+                                >
+                                  👁️ Hide
+                                </button>
+                                <button
+                                  onClick={() => deleteProduct(p)}
+                                  style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -1547,7 +1606,10 @@ export default function Home() {
                           <div key={req.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, marginBottom: 10 }}>
                             <div style={{ fontSize: 13, fontWeight: 800 }}>{req.type.toUpperCase()} Request</div>
                             <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-                              From: <b>{req.requested_by}</b> → Target: <b>{req.target_email}</b>
+                              From: <b>{req.requested_by}</b>
+                              {req.type === 'delete_product'
+                                ? <span> • Delete Product: <b>{req.target_email}</b></span>
+                                : <span> → Target: <b>{req.target_email}</b></span>}
                               {req.type === 'coins' && <span> • Coins: <b>+{req.amount}</b></span>}
                               {req.type === 'make_admin' && <span> • Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
                             </div>
