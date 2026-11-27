@@ -20,18 +20,18 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const CATEGORIES = [
-  { name: "All", icon: "🏷️" },
-  { name: "Mobiles", icon: "📱" },
-  { name: "Fashion", icon: "👗" },
-  { name: "Electronics", icon: "💻" },
-  { name: "Home", icon: "🏠" },
-  { name: "Beauty", icon: "💄" },
+  { name: "All", icon: "ðŸ·ï¸" },
+  { name: "Mobiles", icon: "ðŸ“±" },
+  { name: "Fashion", icon: "ðŸ‘—" },
+  { name: "Electronics", icon: "ðŸ’»" },
+  { name: "Home", icon: "ðŸ " },
+  { name: "Beauty", icon: "ðŸ’„" },
 ];
 
 const SLIDES = [
-  { title: "Big Saving Days Are Live!", sub: "Up to 80% Off + Extra Discount on Top Brands", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" },
-  { title: "Electronics Mega Sale", sub: "Earbuds, Watches, Speakers — Starting ₹499 Only", cta: "Grab Deal", emoji: "🎧", bg: "linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)" },
-  { title: "Fashion Fest is Here", sub: "Flat 70% Off on Kurtis, Shirts & Shoes", cta: "Explore", emoji: "👟", bg: "linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)" },
+  { title: "Big Saving Days Are Live!", sub: "Up to 80% Off + Extra Discount on Top Brands", cta: "Shop Now", emoji: "ðŸ›ï¸", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" },
+  { title: "Electronics Mega Sale", sub: "Earbuds, Watches, Speakers â€” Starting â‚¹499 Only", cta: "Grab Deal", emoji: "ðŸŽ§", bg: "linear-gradient(135deg,#0ea5e9 0%,#6366f1 50%,#a855f7 100%)" },
+  { title: "Fashion Fest is Here", sub: "Flat 70% Off on Kurtis, Shirts & Shoes", cta: "Explore", emoji: "ðŸ‘Ÿ", bg: "linear-gradient(135deg,#f97316 0%,#fb7185 50%,#ec4899 100%)" },
 ];
 
 const PAGES = {
@@ -41,7 +41,7 @@ const PAGES = {
   terms: { title: "Terms & Conditions", body: "1. BAZARU is a deals discovery website, not a seller.\n2. All prices shown are from partner websites and may change anytime.\n3. Product delivery, return and refund are handled by the partner seller, not by BAZARU.\n4. By using this site, you agree to our terms.\n5. We can change deals anytime without notice." },
   disclaimer: { title: "Disclaimer & Affiliate Disclosure", body: "IMPORTANT - PLEASE READ:\n\nBAZARU is an affiliate website. When you click on BUY NOW, you may be redirected to a third-party website like EarnKaro, Amazon or Flipkart.\n\nWe may earn a small commission if you buy from that link, at NO extra cost to you. This helps us keep BAZARU free.\n\nWe do not own the products, we do not deliver them, and we are not responsible for product quality, delivery delay, return or refund. Please check price and details on the seller website before buying.\n\nAll trademarks belong to their respective owners." },
   refund: { title: "Refund & Return Policy", body: "Since BAZARU does not sell products directly, we do not process refunds.\n\nIf you bought a product via our link and want to return / refund it, please contact the seller directly (Amazon / Flipkart / Myntra) from your Orders page.\n\nIf you face any issue with a deal link, email us at support@bazaru.in and we will help you." },
-  shipping: { title: "Shipping Policy", body: "BAZARU does not ship products. Shipping is done by the partner store where you buy.\n\nDelivery time, shipping charges and tracking will be shown on the partner website at checkout.\n\nMost partners offer Free Delivery above ₹499." },
+  shipping: { title: "Shipping Policy", body: "BAZARU does not ship products. Shipping is done by the partner store where you buy.\n\nDelivery time, shipping charges and tracking will be shown on the partner website at checkout.\n\nMost partners offer Free Delivery above â‚¹499." },
 };
 
 const getReviews = (id) => {
@@ -283,7 +283,7 @@ export default function Home() {
   const [toast, setToast] = useState(null);
   const [newProd, setNewProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
   const [showCoinShop, setShowCoinShop] = useState(false);
-  const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
+  const [newSlide, setNewSlide] = useState({ title: "", sub: "", cta: "Shop Now", emoji: "ðŸ›ï¸", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
   const [clickCount, setClickCount] = useState(0);
@@ -291,6 +291,9 @@ export default function Home() {
   // === ADMIN CLICKS DASHBOARD STATE ===
   const [clicks, setClicks] = useState([]);
   const [clickFilter, setClickFilter] = useState("daily");
+  const [loginHistory, setLoginHistory] = useState([]);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editProd, setEditProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
 
   /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
@@ -339,7 +342,7 @@ export default function Home() {
     const { error } = await supabase.auth.signUp({ email: email.trim(), password });
     setAuthLoading(false);
     if (error) return notify(error.message, "error");
-    notify("Account created! Now Login ✅");
+    notify("Account created! Now Login âœ…");
     setAuthMode("login");
   };
 
@@ -354,6 +357,7 @@ export default function Home() {
       await supabase.auth.signOut();
       return notify("Your account has been blocked by Admin!", "error");
     }
+    await supabase.from("login_history").insert([{ user_id: data.user.id, email: data.user.email, status: "success", created_at: new Date().toISOString() }]);
     const u = {
       id: data.user.id,
       email: data.user.email,
@@ -365,21 +369,21 @@ export default function Home() {
     setCoins(prof?.coins || 0);
     if (prof?.is_admin === true || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
     setShowLogin(false); setPassword("");
-    notify(`Welcome, ${u.name}! 👋`);
+    notify(`Welcome, ${u.name}! ðŸ‘‹`);
   };
 
   const handleForgot = async () => {
     if (!email.includes("@")) return notify("Enter email first, then press Forgot", "error");
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: window.location.origin });
     if (error) return notify(error.message, "error");
-    notify("Reset link sent to your email! 📧 Check your inbox");
+    notify("Reset link sent to your email! ðŸ“§ Check your inbox");
   };
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) return notify("New password must be 6+ characters", "error");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return notify(error.message, "error");
-    notify("Password changed ✅");
+    notify("Password changed âœ…");
     setNewPassword("");
   };
 
@@ -387,7 +391,7 @@ export default function Home() {
     if (newPassword.length < 6) return notify("Password must be at least 6 characters", "error");
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) return notify(error.message, "error");
-    notify("Password changed! Now Login ✅");
+    notify("Password changed! Now Login âœ…");
     setShowResetPassword(false);
     setNewPassword("");
     setShowLogin(true);
@@ -431,7 +435,7 @@ export default function Home() {
       status: 'pending'
     }]);
     if (error) return notify("Error: " + error.message, "error");
-    notify("Request sent to Super Admin! ✅ Wait for approval");
+    notify("Request sent to Super Admin! âœ… Wait for approval");
     loadApprovals();
   };
 
@@ -454,6 +458,12 @@ export default function Home() {
       const { error } = await supabase.from("profiles").update({ is_blocked: true }).eq("id", req.target_id);
       if (error) return notify("User block failed: " + error.message, "error");
     }
+    if (req.type === 'edit_product') {
+      const { error } = await supabase.from("products").update(req.product_data || {}).eq("id", req.target_id);
+      if (error) return notify("Product edit failed: " + error.message, "error");
+      setProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...(req.product_data || {}) } : x));
+      setHiddenProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...(req.product_data || {}) } : x));
+    }
     if (req.type === 'delete_product') {
       const { error } = await supabase.from("products").delete().eq("id", req.target_id);
       if (error) return notify("Product delete failed: " + error.message, "error");
@@ -461,14 +471,14 @@ export default function Home() {
       setHiddenProducts(prev => prev.filter(x => x.id !== req.target_id));
     }
     await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
-    notify("Approved ✅ Action completed!");
+    notify("Approved âœ… Action completed!");
     loadAllUsers(); loadApprovals();
   };
 
   const rejectRequest = async (req) => {
     if (!isSuperAdmin) return notify("Only Super Admin can reject!", "error");
     await supabase.from("approvals").update({ status: 'rejected' }).eq("id", req.id);
-    notify("Rejected ❌ Request cancelled!", "error");
+    notify("Rejected âŒ Request cancelled!", "error");
     loadApprovals();
   };
 
@@ -487,7 +497,7 @@ export default function Home() {
       const newCoins = (u.coins || 0) + amt;
       await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
       if (user?.id === u.id) setCoins(newCoins);
-      loadAllUsers(); notify(`${amt} coins added ✅`);
+      loadAllUsers(); notify(`${amt} coins added âœ…`);
     } else {
       await sendApprovalRequest('coins', u, { amount: amt });
     }
@@ -498,7 +508,7 @@ export default function Home() {
     if (isSuperAdmin) {
       const { error } = await supabase.from("profiles").update({ is_admin: makeAdminVal }).eq("email", targetEmail);
       if (error) return notify("Error: " + error.message, "error");
-      loadAllUsers(); notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
+      loadAllUsers(); notify(makeAdminVal ? "Made Admin âœ…" : "Removed Admin âœ…");
     } else {
       const target = allUsers.find(x => x.email === targetEmail);
       if (!target) return notify("User not found!", "error");
@@ -514,7 +524,7 @@ export default function Home() {
       const { error } = await supabase.from("profiles").update({ is_blocked: true }).eq("id", u.id);
       if (error) return notify("User block failed: " + error.message, "error");
       await loadAllUsers();
-      notify("User Blocked / Inactive ✅ Login nahi kar payega", "error");
+      notify("User Blocked / Inactive âœ… Login nahi kar payega", "error");
     } else {
       await sendApprovalRequest('delete_user', u);
     }
@@ -525,7 +535,7 @@ export default function Home() {
     const { error } = await supabase.from("profiles").update({ is_blocked: false }).eq("id", u.id);
     if (error) return notify("User unblock failed: " + error.message, "error");
     await loadAllUsers();
-    notify("User Unblocked ✅ Ab Login kar payega");
+    notify("User Unblocked âœ… Ab Login kar payega");
   };
 
   const handleAdminOpen = () => {
@@ -535,6 +545,12 @@ export default function Home() {
   };
 
   // === ADMIN CLICKS HELPERS ===
+  const loadLoginHistory = async () => {
+    const { data, error } = await supabase.from("login_history").select("*").order("created_at", { ascending: false }).limit(500);
+    if (error) return notify("Login history load error: " + error.message, "error");
+    setLoginHistory(data || []);
+  };
+
   const loadClicks = async () => {
     const { data } = await supabase.from("clicks").select("*").order("created_at", { ascending: false });
     setClicks(data || []);
@@ -672,7 +688,7 @@ export default function Home() {
       ? cart.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c)
       : [...cart, { id: p.id, title: p.title, price: p.price, image: p.image, qty: 1 }];
     saveCart(next);
-    notify("Added to cart 🛒", "success");
+    notify("Added to cart ðŸ›’", "success");
   };
   const changeQty = (id, delta) => {
     const next = cart.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c);
@@ -682,7 +698,7 @@ export default function Home() {
 
   const toggleWish = (id) => {
     if (wishlist.includes(id)) { saveWish(wishlist.filter(x => x !== id)); notify("Removed from wishlist", "error"); }
-    else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
+    else { saveWish([...wishlist, id]); notify("Added to wishlist â¤ï¸", "success"); }
   };
 
   /* ---------- BUY NOW CLICK TRACKING ---------- */
@@ -718,7 +734,7 @@ export default function Home() {
     if (error) return notify("Could not save coin: " + error.message, "error");
 
     setCoins(newTotal);
-    notify("🎉 +10 Coins Claimed!");
+    notify("ðŸŽ‰ +10 Coins Claimed!");
   };
 
   const redeemCoins = async (need, reward) => {
@@ -728,7 +744,7 @@ export default function Home() {
     setCoins(total);
     if (user?.id) await supabase.from("profiles").update({ coins: total }).eq("id", user.id);
     const code = "BAZARU" + need + Math.floor(Math.random() * 900 + 100);
-    notify(`🎉 Code received: ${code} - ${reward}`);
+    notify(`ðŸŽ‰ Code received: ${code} - ${reward}`);
     navigator.clipboard?.writeText(code);
   };
 
@@ -753,7 +769,31 @@ export default function Home() {
 
     setProducts([data, ...products]);
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
-    notify("Product added to Supabase ✅");
+    notify("Product added to Supabase âœ…");
+  };
+
+  const openEditProduct = (p) => {
+    setEditingProduct(p);
+    setEditProd({ title: p.title || "", price: String(p.price ?? ""), mrp: String(p.mrp ?? ""), category: p.category || "Electronics", image: p.image || "", affiliate_url: p.affiliate_url || "" });
+  };
+
+  const submitEditProduct = async () => {
+    if (!editingProduct) return;
+    if (!editProd.title.trim() || !editProd.price) return notify("Title aur Price required hai", "error");
+    const productData = { title: editProd.title.trim(), slug: editProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""), price: Number(editProd.price), mrp: Number(editProd.mrp) || Number(editProd.price) * 2, category: editProd.category, image: editProd.image || editingProduct.image, affiliate_url: editProd.affiliate_url || "#" };
+    if (isSuperAdmin) {
+      const { error } = await supabase.from("products").update(productData).eq("id", editingProduct.id);
+      if (error) return notify("Product update failed: " + error.message, "error");
+      setProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...productData } : x));
+      setHiddenProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...productData } : x));
+      notify("Product updated successfully âœ…");
+    } else {
+      const { error } = await supabase.from("approvals").insert([{ type: "edit_product", requested_by: user.email, target_email: editingProduct.title, target_id: editingProduct.id, product_data: productData, status: "pending" }]);
+      if (error) return notify("Edit request failed: " + error.message, "error");
+      notify("Edit request Super Admin ko bhej di. Approval pending â³");
+      loadApprovals();
+    }
+    setEditingProduct(null);
   };
 
   const addSlider = async () => {
@@ -761,8 +801,8 @@ export default function Home() {
     const { data, error } = await supabase.from("sliders").insert([newSlide]).select().single();
     if (error) return notify("Error: " + error.message, "error");
     setSlides([...slides, data]);
-    setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "🛍️", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
-    notify("Slider added ✅");
+    setNewSlide({ title: "", sub: "", cta: "Shop Now", emoji: "ðŸ›ï¸", bg: "linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)" });
+    notify("Slider added âœ…");
   };
   const deleteSlider = async (id) => {
     await supabase.from("sliders").delete().eq("id", id);
@@ -778,7 +818,7 @@ export default function Home() {
     if (error) return notify("Could not hide product: " + error.message, "error");
     setProducts(prev => prev.filter(x => x.id !== id));
     setHiddenProducts(prev => [product, ...prev.filter(x => x.id !== id)]);
-    notify("Product Hidden 👁️ - Wapas Show kar sakte ho", "error");
+    notify("Product Hidden ðŸ‘ï¸ - Wapas Show kar sakte ho", "error");
   };
 
   // === SHOW - Restore hidden product ===
@@ -787,7 +827,7 @@ export default function Home() {
     if (error) return notify("Could not show product: " + error.message, "error");
     setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
     setProducts(prev => [p, ...prev.filter(x => x.id !== p.id)]);
-    notify("Product wapas Show ho gaya ✅");
+    notify("Product wapas Show ho gaya âœ…");
   };
 
   // === DELETE - Permanent delete; non-super-admin requires approval ===
@@ -799,7 +839,7 @@ export default function Home() {
       if (error) return notify("Delete failed: " + error.message, "error");
       setProducts(prev => prev.filter(x => x.id !== p.id));
       setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
-      notify("Product Permanent Delete ho gaya 🗑️", "error");
+      notify("Product Permanent Delete ho gaya ðŸ—‘ï¸", "error");
     } else {
       const { error } = await supabase.from("approvals").insert([{
         type: 'delete_product',
@@ -809,13 +849,13 @@ export default function Home() {
         status: 'pending'
       }]);
       if (error) return notify("Error: " + error.message, "error");
-      notify("Delete Request Super Admin ko bhej di! ✅ Approval ka wait karo");
+      notify("Delete Request Super Admin ko bhej di! âœ… Approval ka wait karo");
       loadApprovals();
     }
   };
 
   const checkout = () => {
-    notify("Demo checkout — complete your purchase on partner site 🚀");
+    notify("Demo checkout â€” complete your purchase on partner site ðŸš€");
     setShowCart(false);
   };
 
@@ -851,16 +891,16 @@ export default function Home() {
         {/* ================= HEADER ================= */}
         <header className="bz-header">
           <div className="bz-topstrip">
-            <span>🚚 Free Delivery on orders above ₹499</span>
-            <span>🔥 Deal Ends in <b>{timeLeft}</b></span>
+            <span>ðŸšš Free Delivery on orders above â‚¹499</span>
+            <span>ðŸ”¥ Deal Ends in <b>{timeLeft}</b></span>
           </div>
 
           <div className="bz-header-inner">
-            <button className="bz-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">☰</button>
+            <button className="bz-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">â˜°</button>
 
             <div className="bz-logo" onClick={goHome}>
               <b className="bz-logo-text">BAZARU</b>
-              <span>✦ Explore Plus+ ✦</span>
+              <span>âœ¦ Explore Plus+ âœ¦</span>
             </div>
 
             <div className="bz-search bz-desktop-search">
@@ -869,25 +909,25 @@ export default function Home() {
                 onChange={e => { setSearch(e.target.value); setPage(null); }}
                 placeholder="Search for products, brands and more..."
               />
-              <button className="bz-search-btn">🔍</button>
+              <button className="bz-search-btn">ðŸ”</button>
             </div>
 
             <div className="bz-header-actions">
               <button className="bz-icon-btn" onClick={() => setShowCoinShop(true)}>
-                <span style={{ fontSize: 15 }}>🪙</span>
+                <span style={{ fontSize: 15 }}>ðŸª™</span>
                 <span>{coins}</span>
               </button>
               <button className="bz-icon-btn" onClick={() => (user ? logout() : setShowLogin(true))}>
-                <span style={{ fontSize: 15 }}>👤</span>
+                <span style={{ fontSize: 15 }}>ðŸ‘¤</span>
                 <span className="bz-hide-sm">{user ? user.name : "Login"}</span>
               </button>
               <button className="bz-icon-btn" onClick={() => setShowWish(true)}>
-                <span style={{ fontSize: 15 }}>❤️</span>
+                <span style={{ fontSize: 15 }}>â¤ï¸</span>
                 <span className="bz-hide-sm">Wishlist</span>
                 {wishlist.length > 0 && <span className="bz-badge">{wishlist.length}</span>}
               </button>
               <button className="bz-icon-btn" onClick={() => setShowCart(true)}>
-                <span style={{ fontSize: 15 }}>🛒</span>
+                <span style={{ fontSize: 15 }}>ðŸ›’</span>
                 <span className="bz-hide-sm">Cart</span>
                 {cartCount > 0 && <span className="bz-badge">{cartCount}</span>}
               </button>
@@ -900,7 +940,7 @@ export default function Home() {
               onChange={e => { setSearch(e.target.value); setPage(null); }}
               placeholder="Search products..."
             />
-            <button className="bz-search-btn">🔍</button>
+            <button className="bz-search-btn">ðŸ”</button>
           </div>
         </header>
 
@@ -923,7 +963,7 @@ export default function Home() {
         <main className="bz-main">
           {page ? (
             <div className="bz-info">
-              <button className="bz-back" onClick={() => setPage(null)}>← Back to Home</button>
+              <button className="bz-back" onClick={() => setPage(null)}>â† Back to Home</button>
               <h1>{PAGES[page].title}</h1>
               <p>{PAGES[page].body}</p>
             </div>
@@ -934,7 +974,7 @@ export default function Home() {
                   <h1>{currentSlide.title}</h1>
                   <p>{currentSlide.sub}</p>
                   <button className="bz-ghost" style={{ background: "#fff", color: "#4f46e5", border: "none", fontWeight: 800 }} onClick={() => document.querySelector(".bz-grid")?.scrollIntoView({ behavior: "smooth" })}>
-                    {currentSlide.cta} →
+                    {currentSlide.cta} â†’
                   </button>
                 </div>
                 <div className="bz-hero-emoji">{currentSlide.emoji}</div>
@@ -947,7 +987,7 @@ export default function Home() {
 
               <div className="bz-section-head">
                 <div>
-                  <h2>🔥 Trending Deals</h2>
+                  <h2>ðŸ”¥ Trending Deals</h2>
                   <span className="bz-count">
                     {loading ? "Loading deals..." : `${filtered.length} products found`}
                   </span>
@@ -969,7 +1009,7 @@ export default function Home() {
                 </div>
               ) : filtered.length === 0 ? (
                 <div className="bz-empty">
-                  <div>🔍</div>
+                  <div>ðŸ”</div>
                   <h4>No products found</h4>
                   <p>Try a different search or category</p>
                 </div>
@@ -987,7 +1027,7 @@ export default function Home() {
                           className={`bz-heart ${wishlist.includes(p.id) ? "active" : ""}`}
                           onClick={(e) => { e.stopPropagation(); toggleWish(p.id); }}
                         >
-                          {wishlist.includes(p.id) ? "❤️" : "🤍"}
+                          {wishlist.includes(p.id) ? "â¤ï¸" : "ðŸ¤"}
                         </button>
                         <img
                           src={p.image}
@@ -1001,18 +1041,18 @@ export default function Home() {
                         <div className="bz-card-title" onClick={() => setSelected(p)}>{p.title}</div>
 
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <span className="bz-rate">{p.rating} ★</span>
+                          <span className="bz-rate">{p.rating} â˜…</span>
                           <span className="bz-reviews">({getReviews(p.id).toLocaleString()})</span>
                         </div>
 
                         <div className="bz-price">
-                          <b>₹{p.price}</b>
-                          <s>₹{p.mrp}</s>
+                          <b>â‚¹{p.price}</b>
+                          <s>â‚¹{p.mrp}</s>
                           <em>{off(p)}% off</em>
                         </div>
 
                         <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}>
-                          🚚 Free Delivery • Bank Offer
+                          ðŸšš Free Delivery â€¢ Bank Offer
                         </div>
 
                         <div className="bz-card-actions">
@@ -1026,10 +1066,10 @@ export default function Home() {
               )}
 
               <div className="bz-features">
-                <div className="bz-feature"><span className="bz-feature-icon">🚚</span><div><b>Free Delivery</b><small>On orders above ₹499</small></div></div>
-                <div className="bz-feature"><span className="bz-feature-icon">🔄</span><div><b>7-Day Returns</b><small>Easy partner returns</small></div></div>
-                <div className="bz-feature"><span className="bz-feature-icon">🔒</span><div><b>100% Secure</b><small>Safe partner checkout</small></div></div>
-                <div className="bz-feature"><span className="bz-feature-icon">🎧</span><div><b>24×7 Support</b><small>We reply within 24 hrs</small></div></div>
+                <div className="bz-feature"><span className="bz-feature-icon">ðŸšš</span><div><b>Free Delivery</b><small>On orders above â‚¹499</small></div></div>
+                <div className="bz-feature"><span className="bz-feature-icon">ðŸ”„</span><div><b>7-Day Returns</b><small>Easy partner returns</small></div></div>
+                <div className="bz-feature"><span className="bz-feature-icon">ðŸ”’</span><div><b>100% Secure</b><small>Safe partner checkout</small></div></div>
+                <div className="bz-feature"><span className="bz-feature-icon">ðŸŽ§</span><div><b>24Ã—7 Support</b><small>We reply within 24 hrs</small></div></div>
               </div>
             </>
           )}
@@ -1041,17 +1081,17 @@ export default function Home() {
             <div>
               <div className="bz-logo" style={{ marginBottom: 12 }} onClick={goHome}>
                 <b className="bz-logo-text" style={{ fontSize: 24 }}>BAZARU</b>
-                <span>✦ Explore Plus+ ✦</span>
+                <span>âœ¦ Explore Plus+ âœ¦</span>
               </div>
               <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>
                 India's fastest growing deals discovery platform. Best deals from Amazon, Flipkart,
-                Myntra & more — all in one place.
+                Myntra & more â€” all in one place.
               </p>
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-                <a className="bz-social" href="https://instagram.com" target="_blank" rel="noopener noreferrer">📸</a>
-                <a className="bz-social" href="https://youtube.com" target="_blank" rel="noopener noreferrer">▶️</a>
-                <a className="bz-social" href="https://facebook.com" target="_blank" rel="noopener noreferrer">📘</a>
-                <a className="bz-social" href="https://t.me" target="_blank" rel="noopener noreferrer">✈️</a>
+                <a className="bz-social" href="https://instagram.com" target="_blank" rel="noopener noreferrer">ðŸ“¸</a>
+                <a className="bz-social" href="https://youtube.com" target="_blank" rel="noopener noreferrer">â–¶ï¸</a>
+                <a className="bz-social" href="https://facebook.com" target="_blank" rel="noopener noreferrer">ðŸ“˜</a>
+                <a className="bz-social" href="https://t.me" target="_blank" rel="noopener noreferrer">âœˆï¸</a>
               </div>
             </div>
 
@@ -1086,20 +1126,20 @@ export default function Home() {
               </p>
               <div className="bz-news">
                 <input placeholder="Your email" />
-                <button className="bz-primary" style={{ padding: "10px 16px", fontSize: 13 }} onClick={() => notify("Subscribed! 🎉")}>
+                <button className="bz-primary" style={{ padding: "10px 16px", fontSize: 13 }} onClick={() => notify("Subscribed! ðŸŽ‰")}>
                   Join
                 </button>
               </div>
               <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: 14, lineHeight: 1.7 }}>
-                📧 support@bazaru.in<br />
-                📍 Domariaganj, UP - 272189
+                ðŸ“§ support@bazaru.in<br />
+                ðŸ“ Domariaganj, UP - 272189
               </p>
             </div>
           </div>
 
           <div className="bz-foot-bottom">
-            <span>© 2026 BAZARU — All Rights Reserved</span>
-            <span>💳 Visa • Mastercard • UPI • COD</span>
+            <span>Â© 2026 BAZARU â€” All Rights Reserved</span>
+            <span>ðŸ’³ Visa â€¢ Mastercard â€¢ UPI â€¢ COD</span>
           </div>
           <div className="bz-foot-note">
             Disclaimer: BAZARU is an affiliate deals website. We may earn a commission from partner links
@@ -1113,12 +1153,12 @@ export default function Home() {
             <div className="bz-overlay" onClick={() => setMenuOpen(false)} />
             <aside className="bz-drawer">
               <div className="bz-drawer-head">
-                <h3>☰ Menu</h3>
-                <button className="bz-close" onClick={() => setMenuOpen(false)}>✕</button>
+                <h3>â˜° Menu</h3>
+                <button className="bz-close" onClick={() => setMenuOpen(false)}>âœ•</button>
               </div>
 
               <div className="bz-drawer-user">
-                <div className="bz-avatar">{user ? user.name[0].toUpperCase() : "👤"}</div>
+                <div className="bz-avatar">{user ? user.name[0].toUpperCase() : "ðŸ‘¤"}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800 }}>{user ? user.name : "Guest User"}</div>
                   <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 600 }}>{user ? user.email : "Login to save your data"}</div>
@@ -1140,16 +1180,16 @@ export default function Home() {
               ))}
 
               <div className="bz-drawer-title">Company</div>
-              <button className="bz-menu-link" onClick={() => goTo("about")}><span>ℹ️</span>About Us</button>
-              <button className="bz-menu-link" onClick={() => goTo("contact")}><span>📞</span>Contact Us</button>
-              <button className="bz-menu-link" onClick={() => goTo("disclaimer")}><span>⚠️</span>Disclaimer</button>
-              <button className="bz-menu-link" onClick={() => goTo("privacy")}><span>🔒</span>Privacy Policy</button>
-              <button className="bz-menu-link" onClick={() => goTo("terms")}><span>📄</span>Terms & Conditions</button>
-              <button className="bz-menu-link" onClick={() => goTo("refund")}><span>🔄</span>Refund Policy</button>
-              <button className="bz-menu-link" onClick={() => goTo("shipping")}><span>🚚</span>Shipping Policy</button>
+              <button className="bz-menu-link" onClick={() => goTo("about")}><span>â„¹ï¸</span>About Us</button>
+              <button className="bz-menu-link" onClick={() => goTo("contact")}><span>ðŸ“ž</span>Contact Us</button>
+              <button className="bz-menu-link" onClick={() => goTo("disclaimer")}><span>âš ï¸</span>Disclaimer</button>
+              <button className="bz-menu-link" onClick={() => goTo("privacy")}><span>ðŸ”’</span>Privacy Policy</button>
+              <button className="bz-menu-link" onClick={() => goTo("terms")}><span>ðŸ“„</span>Terms & Conditions</button>
+              <button className="bz-menu-link" onClick={() => goTo("refund")}><span>ðŸ”„</span>Refund Policy</button>
+              <button className="bz-menu-link" onClick={() => goTo("shipping")}><span>ðŸšš</span>Shipping Policy</button>
 
               <div className="bz-drawer-title">Admin</div>
-              <button className="bz-menu-link" onClick={() => { setMenuOpen(false); handleAdminOpen(); }}><span>⚙️</span>Admin Panel</button>
+              <button className="bz-menu-link" onClick={() => { setMenuOpen(false); handleAdminOpen(); }}><span>âš™ï¸</span>Admin Panel</button>
             </aside>
           </>
         )}
@@ -1160,14 +1200,14 @@ export default function Home() {
             <div className="bz-overlay" onClick={() => setShowCart(false)} />
             <aside className="bz-drawer right">
               <div className="bz-drawer-head">
-                <h3>🛒 My Cart ({cartCount})</h3>
-                <button className="bz-close" onClick={() => setShowCart(false)}>✕</button>
+                <h3>ðŸ›’ My Cart ({cartCount})</h3>
+                <button className="bz-close" onClick={() => setShowCart(false)}>âœ•</button>
               </div>
 
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {cart.length === 0 ? (
                   <div className="bz-empty">
-                    <div>🛒</div>
+                    <div>ðŸ›’</div>
                     <h4>Your cart is empty</h4>
                     <p>Add some amazing deals!</p>
                     <button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowCart(false)}>Start Shopping</button>
@@ -1180,10 +1220,10 @@ export default function Home() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price * item.qty}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>â‚¹{item.price * item.qty}</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <div className="bz-qty">
-                            <button onClick={() => changeQty(item.id, -1)}>−</button>
+                            <button onClick={() => changeQty(item.id, -1)}>âˆ’</button>
                             <span>{item.qty}</span>
                             <button onClick={() => changeQty(item.id, 1)}>+</button>
                           </div>
@@ -1199,11 +1239,11 @@ export default function Home() {
 
               {cart.length > 0 && (
                 <div className="bz-cart-foot">
-                  <div className="bz-cart-row"><span>Subtotal</span><b>₹{cartTotal}</b></div>
+                  <div className="bz-cart-row"><span>Subtotal</span><b>â‚¹{cartTotal}</b></div>
                   <div className="bz-cart-row"><span>Delivery</span><b style={{ color: "#16a34a" }}>FREE</b></div>
-                  <div className="bz-cart-row bz-total"><span>Total</span><b>₹{cartTotal}</b></div>
+                  <div className="bz-cart-row bz-total"><span>Total</span><b>â‚¹{cartTotal}</b></div>
                   <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={checkout}>
-                    PROCEED TO CHECKOUT →
+                    PROCEED TO CHECKOUT â†’
                   </button>
                 </div>
               )}
@@ -1217,14 +1257,14 @@ export default function Home() {
             <div className="bz-overlay" onClick={() => setShowWish(false)} />
             <aside className="bz-drawer right">
               <div className="bz-drawer-head">
-                <h3>❤️ My Wishlist ({wishProducts.length})</h3>
-                <button className="bz-close" onClick={() => setShowWish(false)}>✕</button>
+                <h3>â¤ï¸ My Wishlist ({wishProducts.length})</h3>
+                <button className="bz-close" onClick={() => setShowWish(false)}>âœ•</button>
               </div>
 
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {wishProducts.length === 0 ? (
                   <div className="bz-empty">
-                    <div>💔</div>
+                    <div>ðŸ’”</div>
                     <h4>Wishlist is empty</h4>
                     <p>Tap the heart on any product</p>
                     <button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowWish(false)}>Browse Deals</button>
@@ -1237,7 +1277,7 @@ export default function Home() {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price}</div>
+                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>â‚¹{item.price}</div>
                         <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                           <button className="bz-btn-cart" style={{ flex: 1, padding: "7px" }} onClick={() => addToCart(item)}>ADD TO CART</button>
                           <button
@@ -1264,7 +1304,7 @@ export default function Home() {
                 className="bz-close"
                 style={{ position: "absolute", top: 12, right: 12, background: "rgba(15,23,42,.55)", color: "#fff", zIndex: 5 }}
                 onClick={() => setSelected(null)}
-              >✕</button>
+              >âœ•</button>
 
               <div className="bz-modal-img">
                 <img
@@ -1278,9 +1318,9 @@ export default function Home() {
                 <h2 style={{ fontSize: 19, lineHeight: 1.35, fontWeight: 800 }}>{selected.title}</h2>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0" }}>
-                  <span className="bz-rate">{selected.rating} ★</span>
+                  <span className="bz-rate">{selected.rating} â˜…</span>
                   <span className="bz-reviews">{getReviews(selected.id).toLocaleString()} ratings</span>
-                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 800 }}>✔ Verified</span>
+                  <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 800 }}>âœ” Verified</span>
                 </div>
 
                 <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>
@@ -1288,18 +1328,18 @@ export default function Home() {
                 </p>
 
                 <div className="bz-price" style={{ margin: "14px 0" }}>
-                  <b style={{ fontSize: 26 }}>₹{selected.price}</b>
-                  <s>₹{selected.mrp}</s>
+                  <b style={{ fontSize: 26 }}>â‚¹{selected.price}</b>
+                  <s>â‚¹{selected.mrp}</s>
                   <em>{off(selected)}% off</em>
                 </div>
 
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
-                  <button className="bz-btn-buy" onClick={() => handleBuyClick(selected)}>BUY NOW →</button>
+                  <button className="bz-btn-buy" onClick={() => handleBuyClick(selected)}>BUY NOW â†’</button>
                 </div>
 
                 <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
-                  🔒 Secure checkout on partner site • Free delivery above ₹499
+                  ðŸ”’ Secure checkout on partner site â€¢ Free delivery above â‚¹499
                 </p>
               </div>
             </div>
@@ -1312,7 +1352,7 @@ export default function Home() {
             <div className="bz-modal-card" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: 28 }}>
                 <div style={{ textAlign: "center", marginBottom: 18 }}>
-                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>👋</div>
+                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>ðŸ‘‹</div>
                   <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Welcome to BAZARU</h2>
                   <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
                     Login to save your cart & wishlist
@@ -1329,10 +1369,10 @@ export default function Home() {
                 {authMode !== "forgot" && <input className="bz-input" style={{ marginTop: 10 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password (min 6)" />}
                 {authMode === "login" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAuthLogin}>{authLoading ? "Checking..." : "LOGIN"}</button>}
                 {authMode === "signup" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleSignup}>{authLoading ? "Creating..." : "CREATE ACCOUNT"}</button>}
-                {authMode === "forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK 📧</button>}
+                {authMode === "forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK ðŸ“§</button>}
 
                 {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
-                  <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
+                  <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>ðŸ”’ Change Password</p>
                   <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" />
                   <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
                 </div>}
@@ -1351,7 +1391,7 @@ export default function Home() {
             <div className="bz-modal-card" style={{ maxWidth: 380 }}>
               <div style={{ padding: 28 }}>
                 <div style={{ textAlign: "center", marginBottom: 18 }}>
-                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>🔑</div>
+                  <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>ðŸ”‘</div>
                   <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Reset Password</h2>
                   <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
                     Set new password (min 6 characters)
@@ -1383,8 +1423,8 @@ export default function Home() {
           <div className="bz-modal" onClick={() => setShowAdmin(false)}>
             <div className="bz-modal-card" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
               <div className="bz-drawer-head">
-                <h3>⚙️ Admin Panel - {user?.email}</h3>
-                <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
+                <h3>âš™ï¸ Admin Panel - {user?.email}</h3>
+                <button className="bz-close" onClick={() => setShowAdmin(false)}>âœ•</button>
               </div>
 
               <div style={{ padding: 22 }}>
@@ -1396,8 +1436,8 @@ export default function Home() {
                 ) : (
                   <>
                     <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-                      {["products", "users", "sliders", "clicks"].map(t => (
-                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
+                      {["products", "users", "sliders", "clicks", "logins"].map(t => (
+                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); if (t === "logins") loadLoginHistory(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
                       ))}
                       <button onClick={() => { setAdminTab("approvals"); loadApprovals(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "approvals" ? "#7c3aed" : "#f1f5f9", color: adminTab === "approvals" ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>
                         Approvals {approvals.length > 0 ? `(${approvals.length})` : ""}
@@ -1407,12 +1447,12 @@ export default function Home() {
                     {/* === PRODUCTS TAB === */}
                     {adminTab === "products" && (
                       <div>
-                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
+                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>âž• Add New Product</h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                           <input className="bz-input" value={newProd.title} onChange={e => setNewProd({ ...newProd, title: e.target.value })} placeholder="Product title" />
                           <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price ₹" type="number" />
-                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
+                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.price} onChange={e => setNewProd({ ...newProd, price: e.target.value })} placeholder="Price â‚¹" type="number" />
+                            <input className="bz-input" style={{ flex: 1, minWidth: 110 }} value={newProd.mrp} onChange={e => setNewProd({ ...newProd, mrp: e.target.value })} placeholder="MRP â‚¹" type="number" />
                             <select className="bz-select" value={newProd.category} onChange={e => setNewProd({ ...newProd, category: e.target.value })}>
                               <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
                             </select>
@@ -1422,12 +1462,26 @@ export default function Home() {
                           <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                         </div>
 
+                        {editingProduct && (
+                          <div style={{ border: "2px solid #a78bfa", borderRadius: 12, padding: 14, marginTop: 14, background: "#faf5ff" }}>
+                            <h4 style={{ fontWeight: 800, marginBottom: 10 }}>âœï¸ Edit Product: {editingProduct.title}</h4>
+                            <div style={{ display: "grid", gap: 8 }}>
+                              <input className="bz-input" value={editProd.title} onChange={e => setEditProd({ ...editProd, title: e.target.value })} placeholder="Title" />
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><input className="bz-input" style={{ flex: 1 }} type="number" value={editProd.price} onChange={e => setEditProd({ ...editProd, price: e.target.value })} placeholder="Price" /><input className="bz-input" style={{ flex: 1 }} type="number" value={editProd.mrp} onChange={e => setEditProd({ ...editProd, mrp: e.target.value })} placeholder="MRP" /></div>
+                              <select className="bz-select" value={editProd.category} onChange={e => setEditProd({ ...editProd, category: e.target.value })}><option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option></select>
+                              <input className="bz-input" value={editProd.image} onChange={e => setEditProd({ ...editProd, image: e.target.value })} placeholder="Image URL" />
+                              <input className="bz-input" value={editProd.affiliate_url} onChange={e => setEditProd({ ...editProd, affiliate_url: e.target.value })} placeholder="Affiliate link" />
+                              <div style={{ display: "flex", gap: 8 }}><button className="bz-primary" onClick={submitEditProduct}>Save / Request Approval</button><button className="bz-ghost" onClick={() => setEditingProduct(null)}>Cancel</button></div>
+                              {!isSuperAdmin && <small style={{ color: "#b45309", fontWeight: 700 }}>Admin edits Super Admin approval ke baad apply honge.</small>}
+                            </div>
+                          </div>
+                        )}
                         <div style={{ display: "flex", gap: 8, margin: "20px 0 12px", flexWrap: "wrap" }}>
                           <button onClick={() => setShowHiddenTab(false)} style={{ background: showHiddenTab ? "#f1f5f9" : "#4f46e5", color: showHiddenTab ? "#333" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
-                            ✅ Active Products ({products.length})
+                            âœ… Active Products ({products.length})
                           </button>
                           <button onClick={() => { setShowHiddenTab(true); loadHiddenProducts(); }} style={{ background: showHiddenTab ? "#f59e0b" : "#f1f5f9", color: showHiddenTab ? "#fff" : "#333", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
-                            👁️ Hidden Products ({hiddenProducts.length})
+                            ðŸ‘ï¸ Hidden Products ({hiddenProducts.length})
                           </button>
                         </div>
                         <div style={{ maxHeight: 340, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
@@ -1438,16 +1492,18 @@ export default function Home() {
                           ) : (showHiddenTab ? hiddenProducts : products).map(p => (
                             <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
                               <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} — <b>₹{p.price}</b></span>
+                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} â€” <b>â‚¹{p.price}</b></span>
                               {showHiddenTab ? (
                                 <div style={{ display: "flex", gap: 6 }}>
-                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Show Again</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>âœï¸ Edit</button>
+                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>âœ… Show Again</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>ðŸ—‘ï¸ Delete</button>
                                 </div>
                               ) : (
                                 <div style={{ display: "flex", gap: 6 }}>
-                                  <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>👁️ Hide</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>âœï¸ Edit</button>
+                                  <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>ðŸ‘ï¸ Hide</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>ðŸ—‘ï¸ Delete</button>
                                 </div>
                               )}
                             </div>
@@ -1462,23 +1518,23 @@ export default function Home() {
                         <input className="bz-input" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
                         {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
                           <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
+                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "ðŸ‘‘ ADMIN" : ""} {u.is_blocked ? "ðŸš« BLOCKED" : ""}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                               {/* Agar User Blocked hai to INACTIVE badge aur Unblock button dikhega */}
                               {u.is_blocked ? (
                                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>⛔ INACTIVE</span>
-                                  <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
+                                  <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>â›” INACTIVE</span>
+                                  <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>âœ… Unblock</button>
                                 </div>
                               ) : (
                                 <div style={{ display: "flex", gap: 6 }}>
-                                  <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
-                                  <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                  <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>â›” Block</button>
+                                  <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>ðŸ—‘ï¸ Delete</button>
                                 </div>
                               )}
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 ðŸª™</button>
+                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 ðŸª™</button>
                               <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => makeAdmin(u.email, !u.is_admin)}>{u.is_admin ? "Remove Admin" : "Make Admin"}</button>
                             </div>
                           </div>
@@ -1487,15 +1543,27 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* === LOGIN HISTORY TAB === */}
+                    {adminTab === "logins" && (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}><h4 style={{ fontWeight: 800 }}>ðŸ” Login History & Status</h4><button className="bz-ghost" onClick={loadLoginHistory}>Refresh</button></div>
+                        <p style={{ fontSize: 12, color: "#64748b", marginBottom: 10 }}>Successful logins recorded here. Current account status is shown from Profiles (blocked/active).</p>
+                        <div style={{ maxHeight: 360, overflowY: "auto" }}>
+                          {loginHistory.map((lh, idx) => { const prof = allUsers.find(x => x.id === lh.user_id); return <div key={lh.id || idx} style={{ padding: 10, borderBottom: "1px solid #e2e8f0", fontSize: 12 }}><b>{lh.email || "Unknown"}</b><span style={{ marginLeft: 8, color: prof?.is_blocked ? "#dc2626" : "#16a34a", fontWeight: 800 }}>{prof?.is_blocked ? "â›” BLOCKED" : prof ? "âœ… ACTIVE" : "STATUS UNKNOWN"}</span><div style={{ color: "#64748b", marginTop: 4 }}>{new Date(lh.created_at).toLocaleString("en-IN")} Â· {lh.status || "success"}</div></div>; })}
+                          {loginHistory.length === 0 && <p style={{ color: "#64748b", padding: 12 }}>No login history records.</p>}
+                        </div>
+                      </div>
+                    )}
+
                     {/* === SLIDERS TAB === */}
                     {adminTab === "sliders" && (
                       <div>
-                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>🎠 Add New Slider</h4>
+                        <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>ðŸŽ  Add New Slider</h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                           <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title" />
                           <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle" />
                           <div style={{ display: "flex", gap: 9 }}>
-                            <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
+                            <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji ðŸ›ï¸" />
                             <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
                           </div>
                           <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
@@ -1524,10 +1592,10 @@ export default function Home() {
                       <div>
                         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
                           {[
-                            { key: "daily", label: "📅 Daily" },
-                            { key: "weekly", label: "📆 Weekly" },
-                            { key: "monthly", label: "🗓️ Monthly" },
-                            { key: "yearly", label: "📊 Yearly" },
+                            { key: "daily", label: "ðŸ“… Daily" },
+                            { key: "weekly", label: "ðŸ“† Weekly" },
+                            { key: "monthly", label: "ðŸ—“ï¸ Monthly" },
+                            { key: "yearly", label: "ðŸ“Š Yearly" },
                           ].map(f => (
                             <button
                               key={f.key}
@@ -1569,12 +1637,12 @@ export default function Home() {
                         </div>
 
                         <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, color: "#334155" }}>
-                          👥 User-wise Breakdown ({getUserWiseClicks(clickFilter).length} users)
+                          ðŸ‘¥ User-wise Breakdown ({getUserWiseClicks(clickFilter).length} users)
                         </h4>
 
                         {getUserWiseClicks(clickFilter).length === 0 ? (
                           <div style={{ textAlign: "center", padding: 40, background: "#f8fafc", borderRadius: 12 }}>
-                            <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+                            <div style={{ fontSize: 40, marginBottom: 8 }}>ðŸ“­</div>
                             <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>
                               No clicks in this period
                             </p>
@@ -1613,8 +1681,8 @@ export default function Home() {
                                   {Object.entries(u.products).map(([p, c], i, arr) => (
                                     <span key={p}>
                                       <span style={{ color: "#334155", fontWeight: 700 }}>{p}</span>
-                                      <span style={{ color: "#7c3aed", fontWeight: 800 }}> ({c}×)</span>
-                                      {i < arr.length - 1 ? " • " : ""}
+                                      <span style={{ color: "#7c3aed", fontWeight: 800 }}> ({c}Ã—)</span>
+                                      {i < arr.length - 1 ? " â€¢ " : ""}
                                     </span>
                                   ))}
                                 </div>
@@ -1628,7 +1696,7 @@ export default function Home() {
                           style={{ width: "100%", marginTop: 12 }}
                           onClick={loadClicks}
                         >
-                          🔄 Refresh
+                          ðŸ”„ Refresh
                         </button>
                       </div>
                     )}
@@ -1637,25 +1705,25 @@ export default function Home() {
                     {adminTab === "approvals" && (
                       <div>
                         {approvals.length === 0 ? (
-                          <p style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>No pending requests! 🎉</p>
+                          <p style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>No pending requests! ðŸŽ‰</p>
                         ) : approvals.map(req => (
                           <div key={req.id} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 14, marginBottom: 10 }}>
                             <div style={{ fontSize: 13, fontWeight: 800 }}>{req.type.toUpperCase()} Request</div>
                             <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
                               From: <b>{req.requested_by}</b>
-                              {req.type === 'delete_product'
-                                ? <span> • Delete Product: <b>{req.target_email}</b></span>
-                                : <span> → Target: <b>{req.target_email}</b></span>}
-                              {req.type === 'coins' && <span> • Coins: <b>+{req.amount}</b></span>}
-                              {req.type === 'make_admin' && <span> • Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
+                              {req.type === 'delete_product' || req.type === 'edit_product'
+                                ? <span> â€¢ Product {req.type === 'edit_product' ? 'Edit' : 'Delete'}: <b>{req.target_email}</b></span>
+                                : <span> â†’ Target: <b>{req.target_email}</b></span>}
+                              {req.type === 'coins' && <span> â€¢ Coins: <b>+{req.amount}</b></span>}
+                              {req.type === 'make_admin' && <span> â€¢ Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
                             </div>
                             {isSuperAdmin ? (
                               <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                                <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => approveRequest(req)}>✅ Approve</button>
-                                <button className="bz-ghost" style={{ padding: "8px 14px", fontSize: 12, background: "#fee2e2", color: "#dc2626" }} onClick={() => rejectRequest(req)}>❌ Reject</button>
+                                <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => approveRequest(req)}>âœ… Approve</button>
+                                <button className="bz-ghost" style={{ padding: "8px 14px", fontSize: 12, background: "#fee2e2", color: "#dc2626" }} onClick={() => rejectRequest(req)}>âŒ Reject</button>
                               </div>
                             ) : (
-                              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>⏳ Waiting for Super Admin approval...</div>
+                              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>â³ Waiting for Super Admin approval...</div>
                             )}
                           </div>
                         ))}
@@ -1673,23 +1741,23 @@ export default function Home() {
           <div className="bz-modal" onClick={() => setShowCoinShop(false)}>
             <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
               <div style={{ padding: 24, textAlign: "center" }}>
-                <div style={{ fontSize: 48 }}>🪙</div>
+                <div style={{ fontSize: 48 }}>ðŸª™</div>
                 <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
                 <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>You have <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b></p>
-                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Claim Today's +10 Coin</button>
+                <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>ðŸŽ Claim Today's +10 Coin</button>
                 <p style={{ fontSize: 11, color: "#94a3b8" }}>You can claim once per day</p>
                 <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
+                    <div><b style={{ fontSize: 14 }}>ðŸª™ 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>â‚¹5 OFF Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "â‚¹5 OFF")}>Redeem</button>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
+                    <div><b style={{ fontSize: 14 }}>ðŸª™ 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>â‚¹10 OFF Coupon + Free Delivery</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "â‚¹10 OFF")}>Redeem</button>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹25 OFF Mega Coupon</div></div>
-                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "₹25 OFF")}>Redeem</button>
+                    <div><b style={{ fontSize: 14 }}>ðŸª™ 200 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>â‚¹25 OFF Mega Coupon</div></div>
+                    <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(200, "â‚¹25 OFF")}>Redeem</button>
                   </div>
                 </div>
                 <button className="bz-ghost" style={{ width: "100%", marginTop: 14 }} onClick={() => setShowCoinShop(false)}>Close</button>
@@ -1701,7 +1769,7 @@ export default function Home() {
         {/* ================= TOAST ================= */}
         {toast && (
           <div key={toast.id} className={`bz-toast ${toast.type}`}>
-            <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
+            <span>{toast.type === "error" ? "âš ï¸" : "âœ…"}</span>
             {toast.msg}
           </div>
         )}
