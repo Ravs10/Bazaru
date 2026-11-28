@@ -59,6 +59,7 @@ const CSS = `
 .bz-app button{font-family:inherit;cursor:pointer;background:none;border:none;color:inherit}
 .bz-app a{color:inherit;text-decoration:none}
 .bz-app input,.bz-app select{font-family:inherit}
+
 @keyframes bzFade{from{opacity:0}to{opacity:1}}
 @keyframes bzUp{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bzPop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
@@ -70,6 +71,8 @@ const CSS = `
 @keyframes bzShine{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 @keyframes bzPulseGlow{0%,100%{filter:drop-shadow(0 2px 8px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 2px 14px rgba(236,72,153,.7))}}
 @keyframes bzSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes bzLivePulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.5}}
+
 .bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 45%,#db2777 100%);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.4)}
 .bz-topstrip{background:linear-gradient(90deg,#1e1b4b,#6d28d9,#db2777);color:#f5d0fe;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;padding:6px 18px;flex-wrap:wrap}
 .bz-topstrip b{color:#fde047}
@@ -77,6 +80,7 @@ const CSS = `
 .bz-logo{cursor:pointer;user-select:none;line-height:1;display:flex;flex-direction:column;flex-shrink:0}
 .bz-logo b.bz-logo-text{font-size:28px;font-weight:900;font-style:italic;letter-spacing:1.2px;background:linear-gradient(120deg,#fde047 0%,#fbbf24 25%,#fb923c 50%,#f472b6 75%,#fde047 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:bzShine 4s linear infinite,bzPulseGlow 3s ease-in-out infinite;line-height:1}
 .bz-logo span{font-size:10px;color:#fde047;font-style:italic;margin-top:3px;font-weight:700;letter-spacing:.5px}
+
 .bz-search{display:flex;align-items:center;background:#fff;border-radius:12px;overflow:hidden;flex:1;max-width:620px;box-shadow:0 4px 16px rgba(0,0,0,.18);transition:.25s}
 .bz-search:focus-within{box-shadow:0 0 0 3px rgba(253,224,71,.6)}
 .bz-search input{flex:1;border:0;outline:0;padding:11px 14px;font-size:14px;color:#0f172a;background:transparent;min-width:0}
@@ -89,12 +93,14 @@ const CSS = `
 .bz-hamburger{display:none;width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:19px;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
 .bz-hamburger:hover{background:rgba(255,255,255,.34);transform:scale(1.05)}
 .bz-mobile-search{display:none;max-width:none;margin:0 16px 12px}
+
 .bz-catbar{background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 2px 12px rgba(15,23,42,.05)}
 .bz-catbar-inner{max-width:1280px;margin:0 auto;display:flex;gap:8px;padding:10px 18px;overflow-x:auto;scrollbar-width:none}
 .bz-catbar-inner::-webkit-scrollbar{display:none}
 .bz-chip{display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:999px;background:#f1f5f9;border:1px solid transparent;font-size:13px;font-weight:700;color:#334155;white-space:nowrap;transition:.22s}
 .bz-chip:hover{background:#ede9fe;color:#6d28d9;transform:translateY(-2px)}
 .bz-chip.active{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;box-shadow:0 6px 18px rgba(168,85,247,.42)}
+
 .bz-main{flex:1;width:100%;max-width:1280px;margin:0 auto;padding:16px 18px 44px}
 .bz-hero{position:relative;border-radius:20px;overflow:hidden;color:#fff;min-height:240px;display:flex;align-items:center;box-shadow:0 18px 44px rgba(124,58,237,.38);background-size:200% 200%;animation:bzGrad 9s ease infinite;transition:background-image .5s}
 .bz-hero-content{padding:36px;max-width:640px;position:relative;z-index:2;animation:bzUp .5s ease both}
@@ -104,11 +110,13 @@ const CSS = `
 .bz-hero-dots{position:absolute;bottom:16px;left:38px;display:flex;gap:7px;z-index:3}
 .bz-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.45);cursor:pointer;transition:.28s}
 .bz-dot.active{width:28px;border-radius:999px;background:#fff}
+
 .bz-section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:30px 0 16px}
 .bz-section-head h2{font-size:21px;font-weight:800;letter-spacing:-.4px}
 .bz-count{font-size:12.5px;color:#64748b;font-weight:600}
 .bz-select{padding:9px 12px;border-radius:10px;border:1.5px solid #cbd5e1;background:#fff;font-size:13px;font-weight:700;color:#334155;outline:none;cursor:pointer;transition:.2s}
 .bz-select:hover,.bz-select:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.15)}
+
 .bz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
 .bz-card{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e8ecf3;display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.22,1,.36,1),box-shadow .32s,border-color .32s;animation:bzUp .5s ease both;position:relative}
 .bz-card:hover{transform:translateY(-8px);box-shadow:0 20px 44px rgba(124,58,237,.18);border-color:#e9d5ff}
@@ -133,18 +141,21 @@ const CSS = `
 .bz-btn-cart:hover{background:#fff7ed;transform:translateY(-2px);box-shadow:0 8px 16px rgba(249,115,22,.25)}
 .bz-btn-buy{flex:1;padding:10px 6px;border-radius:10px;background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff;font-size:12.5px;font-weight:800;transition:.22s;text-align:center}
 .bz-btn-buy:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 10px 20px rgba(234,88,12,.42)}
+
 .bz-primary{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff;border:none;padding:12px 26px;border-radius:12px;font-weight:800;font-size:14px;transition:.22s;box-shadow:0 8px 22px rgba(168,85,247,.42)}
 .bz-primary:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(168,85,247,.55);filter:brightness(1.06)}
 .bz-ghost{background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;padding:11px 22px;border-radius:11px;font-weight:800;font-size:13px;transition:.2s}
 .bz-ghost:hover{background:#e2e8f0;color:#0f172a}
 .bz-input{width:100%;padding:12px 14px;border-radius:11px;border:1.5px solid #e2e8f0;font-size:14px;outline:none;transition:.2s;background:#f8fafc;color:#0f172a}
 .bz-input:focus{border-color:#a855f7;background:#fff;box-shadow:0 0 0 3px rgba(168,85,247,.16)}
+
 .bz-features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin:32px 0 8px}
 .bz-feature{display:flex;align-items:center;gap:13px;background:#fff;border:1px solid #e8ecf3;border-radius:14px;padding:16px 18px;transition:.25s}
 .bz-feature:hover{transform:translateY(-4px);box-shadow:0 14px 32px rgba(124,58,237,.12);border-color:#e9d5ff}
 .bz-feature-icon{font-size:26px}
 .bz-feature b{display:block;font-size:13.5px;color:#0f172a}
 .bz-feature small{font-size:11.5px;color:#94a3b8;font-weight:600}
+
 .bz-overlay{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);z-index:190;animation:bzFade .25s ease}
 .bz-drawer{position:fixed;top:0;bottom:0;left:0;width:305px;max-width:86vw;background:#fff;z-index:200;box-shadow:0 0 50px rgba(0,0,0,.3);animation:bzSlideL .32s cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow-y:auto}
 .bz-drawer.right{left:auto;right:0;width:410px;max-width:93vw;animation:bzSlideR .32s cubic-bezier(.22,1,.36,1)}
@@ -157,6 +168,7 @@ const CSS = `
 .bz-drawer-title{font-size:11px;font-weight:800;letter-spacing:1px;color:#94a3b8;padding:16px 20px 8px;text-transform:uppercase}
 .bz-menu-link{display:flex;align-items:center;gap:12px;padding:13px 20px;font-size:14px;font-weight:700;color:#334155;border-bottom:1px solid #f1f5f9;transition:.22s;width:100%;text-align:left}
 .bz-menu-link:hover{background:#f5f3ff;color:#6d28d9;padding-left:27px}
+
 .bz-cart-item{display:flex;gap:12px;padding:14px 20px;border-bottom:1px solid #f1f5f9;animation:bzUp .3s ease both}
 .bz-cart-thumb{width:62px;height:62px;border-radius:13px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);overflow:hidden;flex-shrink:0}
 .bz-cart-thumb img{width:100%;height:100%;object-fit:cover}
@@ -172,6 +184,7 @@ const CSS = `
 .bz-empty h4{font-size:16px;font-weight:800}
 .bz-empty p{font-size:13px;color:#94a3b8;font-weight:600}
 .bz-spinner{width:52px;height:52px;border-radius:50%;border:4px solid #e9d5ff;border-top-color:#a855f7;animation:bzSpin .8s linear infinite}
+
 .bz-modal{position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.6);backdrop-filter:blur(4px);animation:bzFade .2s ease}
 .bz-modal-card{background:#fff;border-radius:18px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:0 30px 90px rgba(15,23,42,.4);animation:bzPop .3s cubic-bezier(.22,1,.36,1);position:relative}
 .bz-modal-img{height:280px;background:#f1f5f9;overflow:hidden}
@@ -179,14 +192,17 @@ const CSS = `
 .bz-modal-img:hover img{transform:scale(1.06)}
 .bz-modal-actions{display:flex;gap:10px}
 .bz-modal-actions>*{flex:1}
+
 .bz-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:300;background:#0f172a;color:#fff;padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:700;box-shadow:0 16px 44px rgba(15,23,42,.45);display:flex;align-items:center;gap:9px;animation:bzToast .3s cubic-bezier(.22,1,.36,1);max-width:92vw}
 .bz-toast.success{background:linear-gradient(135deg,#16a34a,#15803d)}
 .bz-toast.error{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+
 .bz-info{max-width:840px;margin:0 auto;background:#fff;border-radius:18px;padding:34px;box-shadow:0 14px 34px rgba(15,23,42,.07);animation:bzUp .35s ease both;border:1px solid #e8ecf3}
 .bz-info h1{font-size:26px;margin-bottom:16px;background:linear-gradient(135deg,#4338ca,#a855f7,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800}
 .bz-info p{white-space:pre-line;line-height:1.8;color:#334155;font-size:14px}
 .bz-back{display:inline-flex;align-items:center;gap:6px;margin-bottom:18px;background:#f1f5f9;border:1px solid #e2e8f0;padding:9px 16px;border-radius:10px;font-weight:800;font-size:13px;color:#475569;transition:.22s}
 .bz-back:hover{background:#ede9fe;color:#6d28d9;border-color:#e9d5ff;transform:translateX(-3px)}
+
 .bz-footer{background:#0f172a;color:#cbd5e1;margin-top:auto;position:relative;overflow:hidden}
 .bz-footer::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#6366f1,#a855f7,#db2777,#f97316,#6366f1);background-size:300% 100%;animation:bzGrad 6s linear infinite}
 .bz-footer-inner{max-width:1280px;margin:0 auto;padding:44px 18px 24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:28px}
@@ -200,6 +216,28 @@ const CSS = `
 .bz-news input:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.22)}
 .bz-foot-bottom{max-width:1280px;margin:0 auto;border-top:1px solid #1e293b;padding:18px 18px 10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:12px;color:#94a3b8;font-weight:600}
 .bz-foot-note{max-width:1280px;margin:0 auto;padding:0 18px 26px;font-size:11px;color:#64748b;line-height:1.6}
+
+/* ONLINE STATUS DOT */
+.bz-online-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 8px rgba(22,163,74,.7);animation:bzLivePulse 2s ease-in-out infinite}
+.bz-offline-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#94a3b8}
+
+/* LOG ENTRY */
+.bz-log-item{border:1px solid #e2e8f0;border-radius:10px;padding:10px 12px;font-size:12px;background:#fafbfc;transition:.2s}
+.bz-log-item:hover{background:#f1f5f9;border-color:#cbd5e1}
+.bz-log-action{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:800;letter-spacing:.5px}
+.bz-log-action.LOGIN{background:#dcfce7;color:#15803d}
+.bz-log-action.LOGOUT{background:#fee2e2;color:#b91c1c}
+.bz-log-action.PRODUCT_ADD{background:#dbeafe;color:#1e40af}
+.bz-log-action.PRODUCT_EDIT{background:#fef3c7;color:#92400e}
+.bz-log-action.PRODUCT_HIDE,.bz-log-action.PRODUCT_DELETE{background:#fee2e2;color:#b91c1c}
+.bz-log-action.PRODUCT_SHOW{background:#dcfce7;color:#15803d}
+.bz-log-action.USER_BLOCK,.bz-log-action.USER_UNBLOCK{background:#fce7f3;color:#be185d}
+.bz-log-action.MAKE_ADMIN,.bz-log-action.REMOVE_ADMIN{background:#ede9fe;color:#6d28d9}
+.bz-log-action.APPROVE,.bz-log-action.REJECT{background:#e0e7ff;color:#4338ca}
+.bz-log-action.COIN_CLAIM,.bz-log-action.COIN_REDEEM{background:#fef3c7;color:#d97706}
+.bz-log-action.APPROVAL_REQUEST{background:#ffedd5;color:#c2410c}
+.bz-log-action.DEFAULT{background:#f1f5f9;color:#475569}
+
 @media (max-width:900px){
   .bz-hamburger{display:flex}
   .bz-desktop-search{display:none!important}
@@ -271,52 +309,84 @@ export default function Home() {
   const [slides, setSlides] = useState(SLIDES);
   const [coins, setCoins] = useState(0);
   const [clickCount, setClickCount] = useState(0);
+
+  // === ADMIN CLICKS DASHBOARD STATE ===
   const [clicks, setClicks] = useState([]);
   const [clickFilter, setClickFilter] = useState("daily");
-  // === NEW: Edit Product + Login History ===
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [editProd, setEditProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
-  const [loginHistory, setLoginHistory] = useState([]);
-  const [loginSearch, setLoginSearch] = useState("");
-  const [loginFilter, setLoginFilter] = useState("all");
 
+  // === NEW: EDIT PRODUCT ===
+  const [editingProduct, setEditingProduct] = useState(null);
+
+  // === NEW: ACTIVITY LOGS ===
+  const [logs, setLogs] = useState([]);
+  const [logFilter, setLogFilter] = useState("all");
+
+  /* ---------- NOTIFY HELPER ---------- */
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  /* ---------- LOGIN HISTORY (no new query needed) ---------- */
-  const recordLogin = async (authUser, prof) => {
-    const now = new Date().toISOString();
-    const entry = { id: Date.now(), email: authUser.email, user_id: authUser.id, created_at: now, status: prof?.is_blocked ? "blocked" : "success" };
+  /* ---------- ACTIVITY LOG HELPER ---------- */
+  const logActivity = async (action, details = "", userInfo = null) => {
+    const u = userInfo || user;
+    if (!u?.email) return;
     try {
-      const prev = JSON.parse(localStorage.getItem("bazaru_login_history") || "[]");
-      const next = [entry, ...prev].slice(0, 200);
-      localStorage.setItem("bazaru_login_history", JSON.stringify(next));
-      setLoginHistory(next);
-    } catch (e) {}
-    try { await supabase.from("profiles").update({ last_login_at: now, login_count: (prof?.login_count || 0) + 1 }).eq("id", authUser.id); } catch (e) {}
-    try { await supabase.from("login_history").insert([{ user_id: authUser.id, email: authUser.email, created_at: now }]); } catch (e) {}
-  };
-  const loadLoginHistory = async () => {
-    try {
-      const { data } = await supabase.from("login_history").select("*").order("created_at", { ascending: false }).limit(200);
-      if (data && data.length > 0) { setLoginHistory(data); return; }
-    } catch (e) {}
-    try {
-      const local = JSON.parse(localStorage.getItem("bazaru_login_history") || "[]");
-      if (local.length > 0) { setLoginHistory(local); return; }
-    } catch (e) {}
-    const fromUsers = (allUsers || []).filter(u => u.last_login_at).map((u, i) => ({ id: u.id || i, email: u.email, user_id: u.id, created_at: u.last_login_at, status: u.is_blocked ? "blocked" : "success" }));
-    setLoginHistory(fromUsers);
+      await supabase.from("activity_logs").insert([{
+        user_email: u.email,
+        user_name: u.name || u.email.split("@")[0],
+        action,
+        details,
+      }]);
+    } catch (e) { console.log("Log error:", e?.message); }
   };
 
+  const loadLogs = async () => {
+    const { data, error } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) { console.log("Load logs error:", error.message); return; }
+    setLogs(data || []);
+  };
+
+  /* ---------- LOAD PROFILE (with overwrite protection) ---------- */
   const loadProfile = async (authUser) => {
     if (!authUser) return null;
-    const { data: existing } = await supabase.from("profiles").select("*").eq("email", authUser.email).maybeSingle();
+
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("email", authUser.email)
+      .maybeSingle();
+
     if (existing) return existing;
-    const { data: newProf, error } = await supabase.from("profiles").insert([{ id: authUser.id, email: authUser.email, name: authUser.email.split("@")[0], coins: 10, is_admin: authUser.email === ADMIN_EMAIL }]).select().single();
-    if (error) { console.log("Profile insert error:", error.message); return { id: authUser.id, email: authUser.email, name: authUser.email.split("@")[0], coins: 10, is_admin: authUser.email === ADMIN_EMAIL }; }
+
+    const { data: newProf, error } = await supabase
+      .from("profiles")
+      .insert([{
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.email.split("@")[0],
+        coins: 10,
+        is_admin: authUser.email === ADMIN_EMAIL,
+        last_seen: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.log("Profile insert error:", error.message);
+      return {
+        id: authUser.id,
+        email: authUser.email,
+        name: authUser.email.split("@")[0],
+        coins: 10,
+        is_admin: authUser.email === ADMIN_EMAIL,
+      };
+    }
     return newProf;
   };
-    const handleSignup = async () => {
+
+  const handleSignup = async () => {
     if (!email.includes("@")) return notify("Enter a valid email", "error");
     if (password.length < 6) return notify("Password must be at least 6 characters", "error");
     setAuthLoading(true);
@@ -349,7 +419,7 @@ export default function Home() {
     setCoins(prof?.coins || 0);
     if (prof?.is_admin === true || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
     setShowLogin(false); setPassword("");
-    await recordLogin(data.user, prof);
+    await logActivity("LOGIN", "User logged in successfully", u);
     notify(`Welcome, ${u.name}! 👋`);
   };
 
@@ -379,6 +449,7 @@ export default function Home() {
   };
 
   const logout = async () => {
+    await logActivity("LOGOUT", "User logged out");
     await supabase.auth.signOut();
     setUser(null); setIsAdmin(false); setCoins(0);
     notify("Logged out", "error");
@@ -416,6 +487,7 @@ export default function Home() {
       status: 'pending'
     }]);
     if (error) return notify("Error: " + error.message, "error");
+    await logActivity("APPROVAL_REQUEST", `${type} request for ${targetUser.email}`);
     notify("Request sent to Super Admin! ✅ Wait for approval");
     loadApprovals();
   };
@@ -444,34 +516,16 @@ export default function Home() {
       setProducts(prev => prev.filter(x => x.id !== req.target_id));
       setHiddenProducts(prev => prev.filter(x => x.id !== req.target_id));
     }
-    if (req.type === 'edit_product') {
-      // Edit approval: approvals table me product ka naya data target_email / extra me hota hai
-      // Hum pehle approvals row se data nikalne ki koshish karte hain, nahi mila to products se fallback
-      let newData = null;
-      try { newData = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : null; } catch (e) { newData = null; }
-      // Agar product_data column nahi hai to target_email me JSON ho sakta hai (backward compat)
-      if (!newData && req.target_email && req.target_email.startsWith("{")) {
-        try { const parsed = JSON.parse(req.target_email); if (parsed.title) newData = parsed; } catch (e) {}
-      }
-      if (newData) {
-        const clean = { title: newData.title, price: Number(newData.price), mrp: Number(newData.mrp), category: newData.category, image: newData.image, affiliate_url: newData.affiliate_url };
-        if (newData.slug) clean.slug = newData.slug;
-        const { error } = await supabase.from("products").update(clean).eq("id", req.target_id);
-        if (error) return notify("Product edit approve failed: " + error.message, "error");
-        setProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...clean } : x));
-        setHiddenProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...clean } : x));
-      } else {
-        return notify("Edit data nahi mila! Admin se dobara Edit request bhejo.", "error");
-      }
-    }
     await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
+    await logActivity("APPROVE", `${req.type} request for ${req.target_email} APPROVED`);
     notify("Approved ✅ Action completed!");
-    loadAllUsers(); loadApprovals(); loadLoginHistory();
+    loadAllUsers(); loadApprovals();
   };
 
   const rejectRequest = async (req) => {
     if (!isSuperAdmin) return notify("Only Super Admin can reject!", "error");
     await supabase.from("approvals").update({ status: 'rejected' }).eq("id", req.id);
+    await logActivity("REJECT", `${req.type} request for ${req.target_email} REJECTED`);
     notify("Rejected ❌ Request cancelled!", "error");
     loadApprovals();
   };
@@ -480,6 +534,7 @@ export default function Home() {
   const toggleBlock = async (u) => {
     if (isSuperAdmin) {
       await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
+      await logActivity(u.is_blocked ? "USER_UNBLOCK" : "USER_BLOCK", `${u.email} ${u.is_blocked ? "unblocked" : "blocked"}`);
       loadAllUsers(); notify(u.is_blocked ? "User Unblocked" : "User Blocked", "error");
     } else {
       await sendApprovalRequest('block', u);
@@ -491,6 +546,7 @@ export default function Home() {
       const newCoins = (u.coins || 0) + amt;
       await supabase.from("profiles").update({ coins: newCoins }).eq("id", u.id);
       if (user?.id === u.id) setCoins(newCoins);
+      await logActivity("COIN_ADJUST", `${amt > 0 ? "+" : ""}${amt} coins → ${u.email}`);
       loadAllUsers(); notify(`${amt} coins added ✅`);
     } else {
       await sendApprovalRequest('coins', u, { amount: amt });
@@ -502,6 +558,7 @@ export default function Home() {
     if (isSuperAdmin) {
       const { error } = await supabase.from("profiles").update({ is_admin: makeAdminVal }).eq("email", targetEmail);
       if (error) return notify("Error: " + error.message, "error");
+      await logActivity(makeAdminVal ? "MAKE_ADMIN" : "REMOVE_ADMIN", `${targetEmail} ${makeAdminVal ? "made admin" : "removed from admin"}`);
       loadAllUsers(); notify(makeAdminVal ? "Made Admin ✅" : "Removed Admin ✅");
     } else {
       const target = allUsers.find(x => x.email === targetEmail);
@@ -516,6 +573,7 @@ export default function Home() {
     if (isSuperAdmin) {
       const { error } = await supabase.from("profiles").update({ is_blocked: true }).eq("id", u.id);
       if (error) return notify("User block failed: " + error.message, "error");
+      await logActivity("USER_BLOCK", `${u.email} blocked (inactive)`);
       await loadAllUsers();
       notify("User Blocked / Inactive ✅ Login nahi kar payega", "error");
     } else {
@@ -523,10 +581,10 @@ export default function Home() {
     }
   };
 
-  // === UNBLOCK USER - Product Show jaisa! ===
   const unblockUser = async (u) => {
     const { error } = await supabase.from("profiles").update({ is_blocked: false }).eq("id", u.id);
     if (error) return notify("User unblock failed: " + error.message, "error");
+    await logActivity("USER_UNBLOCK", `${u.email} unblocked`);
     await loadAllUsers();
     notify("User Unblocked ✅ Ab Login kar payega");
   };
@@ -534,7 +592,7 @@ export default function Home() {
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
     if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
-    setIsAdmin(true); loadAllUsers(); loadApprovals(); loadHiddenProducts(); loadLoginHistory(); setShowAdmin(true);
+    setIsAdmin(true); loadAllUsers(); loadApprovals(); loadHiddenProducts(); loadLogs(); setShowAdmin(true);
   };
 
   // === ADMIN CLICKS HELPERS ===
@@ -621,14 +679,25 @@ export default function Home() {
       if (sc) setCart(JSON.parse(sc).map(c => ({ ...c, qty: c.qty || 1 })));
       const sw = localStorage.getItem("bazaru_wish");
       if (sw) setWishlist(JSON.parse(sw));
-      const lh = localStorage.getItem("bazaru_login_history");
-      if (lh) setLoginHistory(JSON.parse(lh));
     } catch (e) {}
 
     return () => {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  /* ---------- HEARTBEAT - Update last_seen every 60 sec ---------- */
+  useEffect(() => {
+    if (!user?.id) return;
+    const ping = async () => {
+      try {
+        await supabase.from("profiles").update({ last_seen: new Date().toISOString() }).eq("id", user.id);
+      } catch(e) {}
+    };
+    ping();
+    const t = setInterval(ping, 60000);
+    return () => clearInterval(t);
+  }, [user?.id]);
 
   /* ---------- COUNTDOWN ---------- */
   useEffect(() => {
@@ -693,28 +762,36 @@ export default function Home() {
   /* ---------- BUY NOW CLICK TRACKING ---------- */
   const handleBuyClick = async (product) => {
     console.log("CLICK:", product.title);
+
     const { error } = await supabase.from("clicks").insert([{
       product_id: product.id,
       product_title: product.title,
       email: user?.email || "guest",
       created_at: new Date().toISOString()
     }]);
+
     if (error) console.log("CLICK ERROR:", error.message);
     else {
       console.log("CLICK SAVED");
       setClickCount(c => c + 1);
     }
+
     window.open(product.affiliate_url, "_blank");
   };
 
   const claimCoins = async () => {
     if (!user) return notify("Please Login first!", "error");
     const today = new Date().toISOString().slice(0, 10);
+
     const { data: prof } = await supabase.from("profiles").select("last_claim_date, coins").eq("id", user.id).single();
     if (prof?.last_claim_date === today) return notify("Today's coin already claimed!", "error");
+
     const newTotal = (prof?.coins || coins || 0) + 10;
+
     const { error } = await supabase.from("profiles").update({ coins: newTotal, last_claim_date: today }).eq("id", user.id);
     if (error) return notify("Could not save coin: " + error.message, "error");
+
+    await logActivity("COIN_CLAIM", "+10 coins claimed");
     setCoins(newTotal);
     notify("🎉 +10 Coins Claimed!");
   };
@@ -726,6 +803,7 @@ export default function Home() {
     setCoins(total);
     if (user?.id) await supabase.from("profiles").update({ coins: total }).eq("id", user.id);
     const code = "BAZARU" + need + Math.floor(Math.random() * 900 + 100);
+    await logActivity("COIN_REDEEM", `Redeemed ${need} coins for ${reward}`);
     notify(`🎉 Code received: ${code} - ${reward}`);
     navigator.clipboard?.writeText(code);
   };
@@ -733,6 +811,7 @@ export default function Home() {
   const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
     const slug = newProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
     const p = {
       title: newProd.title,
       slug,
@@ -744,11 +823,43 @@ export default function Home() {
       affiliate_url: newProd.affiliate_url || "#",
       is_active: true,
     };
+
     const { data, error } = await supabase.from("products").insert([p]).select().single();
     if (error) return notify("Supabase Error: " + error.message, "error");
+
+    await logActivity("PRODUCT_ADD", `Added product: ${p.title} (₹${p.price})`);
     setProducts([data, ...products]);
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
     notify("Product added to Supabase ✅");
+  };
+
+  /* ---------- EDIT PRODUCT ---------- */
+  const startEdit = (p) => {
+    setEditingProduct({ ...p });
+  };
+
+  const updateProduct = async () => {
+    if (!editingProduct.title || !editingProduct.price) return notify("Fill title & price", "error");
+    const slug = editingProduct.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+
+    const updated = {
+      title: editingProduct.title,
+      slug,
+      price: Number(editingProduct.price),
+      mrp: Number(editingProduct.mrp) || Number(editingProduct.price) * 2,
+      image: editingProduct.image,
+      category: editingProduct.category,
+      affiliate_url: editingProduct.affiliate_url,
+    };
+
+    const { error } = await supabase.from("products").update(updated).eq("id", editingProduct.id);
+    if (error) return notify("Update failed: " + error.message, "error");
+
+    await logActivity("PRODUCT_EDIT", `Edited product: ${updated.title} (₹${updated.price})`);
+    setProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
+    setHiddenProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
+    setEditingProduct(null);
+    notify("Product updated ✅");
   };
 
   const addSlider = async () => {
@@ -771,6 +882,7 @@ export default function Home() {
     if (!product) return;
     const { error } = await supabase.from("products").update({ is_active: false }).eq("id", id);
     if (error) return notify("Could not hide product: " + error.message, "error");
+    await logActivity("PRODUCT_HIDE", `Hidden: ${product.title}`);
     setProducts(prev => prev.filter(x => x.id !== id));
     setHiddenProducts(prev => [product, ...prev.filter(x => x.id !== id)]);
     notify("Product Hidden 👁️ - Wapas Show kar sakte ho", "error");
@@ -780,53 +892,20 @@ export default function Home() {
   const showProduct = async (p) => {
     const { error } = await supabase.from("products").update({ is_active: true }).eq("id", p.id);
     if (error) return notify("Could not show product: " + error.message, "error");
+    await logActivity("PRODUCT_SHOW", `Shown: ${p.title}`);
     setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
     setProducts(prev => [p, ...prev.filter(x => x.id !== p.id)]);
     notify("Product wapas Show ho gaya ✅");
   };
 
-  // === NEW: EDIT PRODUCT - Open Modal ===
-  const openEditProduct = (p) => {
-    setEditingProduct(p);
-    setEditProd({ title: p.title || "", price: String(p.price ?? ""), mrp: String(p.mrp ?? ""), category: p.category || "Electronics", image: p.image || "", affiliate_url: p.affiliate_url || "" });
-  };
-
-  // === NEW: EDIT PRODUCT - Save / Send for Approval ===
-  const saveEditProduct = async () => {
-    if (!editingProduct) return;
-    if (!editProd.title || !editProd.price) return notify("Fill title & price", "error");
-    const slug = editProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const updated = { title: editProd.title, slug, price: Number(editProd.price), mrp: Number(editProd.mrp) || Number(editProd.price) * 2, image: editProd.image || editingProduct.image, category: editProd.category, affiliate_url: editProd.affiliate_url || "#" };
-    // Super Admin -> Direct Edit
-    if (isSuperAdmin) {
-      const { error } = await supabase.from("products").update(updated).eq("id", editingProduct.id);
-      if (error) return notify("Edit failed: " + error.message, "error");
-      setProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
-      setHiddenProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
-      setEditingProduct(null);
-      return notify("Product Edited ✅");
-    }
-    // Normal Admin -> Approval ke baad hi complete hoga
-    // product_data column ho to usme JSON jayega, nahi ho to target_email me JSON + target_id me product id
-    const payload = { type: 'edit_product', requested_by: user.email, target_email: editingProduct.title, target_id: editingProduct.id, status: 'pending', product_data: updated };
-    let { error } = await supabase.from("approvals").insert([payload]);
-    if (error) {
-      // Agar product_data column nahi hai to bina uske retry karo
-      const fallback = { type: 'edit_product', requested_by: user.email, target_email: JSON.stringify(updated), target_id: editingProduct.id, status: 'pending' };
-      const r2 = await supabase.from("approvals").insert([fallback]);
-      if (r2.error) return notify("Error: " + r2.error.message, "error");
-    }
-    setEditingProduct(null);
-    notify("Edit Request Super Admin ko bhej di! ✅ Approval ke baad hi update hoga");
-    loadApprovals();
-  };
-
   // === DELETE - Permanent delete; non-super-admin requires approval ===
   const deleteProduct = async (p) => {
     if (!confirm(`Pakka Delete karna hai? ${p.title} hamesha ke liye ud jayega!`)) return;
+
     if (isSuperAdmin) {
       const { error } = await supabase.from("products").delete().eq("id", p.id);
       if (error) return notify("Delete failed: " + error.message, "error");
+      await logActivity("PRODUCT_DELETE", `Permanently deleted: ${p.title}`);
       setProducts(prev => prev.filter(x => x.id !== p.id));
       setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
       notify("Product Permanent Delete ho gaya 🗑️", "error");
@@ -839,6 +918,7 @@ export default function Home() {
         status: 'pending'
       }]);
       if (error) return notify("Error: " + error.message, "error");
+      await logActivity("APPROVAL_REQUEST", `Delete product request: ${p.title}`);
       notify("Delete Request Super Admin ko bhej di! ✅ Approval ka wait karo");
       loadApprovals();
     }
@@ -847,6 +927,18 @@ export default function Home() {
   const checkout = () => {
     notify("Demo checkout — complete your purchase on partner site 🚀");
     setShowCart(false);
+  };
+
+  /* ---------- ONLINE STATUS HELPER ---------- */
+  const getOnlineStatus = (u) => {
+    if (!u?.last_seen) return { online: false, text: "Never" };
+    const diff = Date.now() - new Date(u.last_seen).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 5) return { online: true, text: "Online now" };
+    if (mins < 60) return { online: false, text: `${mins}m ago` };
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return { online: false, text: `${hrs}h ago` };
+    return { online: false, text: `${Math.floor(hrs / 24)}d ago` };
   };
 
   /* ---------- DERIVED ---------- */
@@ -869,6 +961,17 @@ export default function Home() {
 
   const off = (p) => Math.round((1 - p.price / p.mrp) * 100);
   const currentSlide = slides[slide % slides.length] || SLIDES[0];
+
+  const filteredLogs = useMemo(() => {
+    if (logFilter === "all") return logs;
+    return logs.filter(l => l.action === logFilter);
+  }, [logs, logFilter]);
+
+  const uniqueActions = useMemo(() => {
+    const set = new Set(logs.map(l => l.action));
+    return Array.from(set);
+  }, [logs]);
+
   /* ============================================================
      RENDER
   ============================================================ */
@@ -1058,7 +1161,7 @@ export default function Home() {
                 <div className="bz-feature"><span className="bz-feature-icon">🚚</span><div><b>Free Delivery</b><small>On orders above ₹499</small></div></div>
                 <div className="bz-feature"><span className="bz-feature-icon">🔄</span><div><b>7-Day Returns</b><small>Easy partner returns</small></div></div>
                 <div className="bz-feature"><span className="bz-feature-icon">🔒</span><div><b>100% Secure</b><small>Safe partner checkout</small></div></div>
-                <div className="bz-feature"><span className="bz-feature-icon">🎧</span><div><b>24×7 Support</b><small>We reply within 24 hrs</small></div></div>
+                <div className="bz-feature"><span className="bz-feature-icon">🎧</span><div><b>24×7 Support</b><div><small>We reply within 24 hrs</small></div></div></div>
               </div>
             </>
           )}
@@ -1335,6 +1438,38 @@ export default function Home() {
           </div>
         )}
 
+        {/* ================= EDIT PRODUCT MODAL ================= */}
+        {editingProduct && (
+          <div className="bz-modal" onClick={() => setEditingProduct(null)}>
+            <div className="bz-modal-card" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+              <div className="bz-drawer-head">
+                <h3>✏️ Edit Product</h3>
+                <button className="bz-close" onClick={() => setEditingProduct(null)}>✕</button>
+              </div>
+              <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, background: "#f8fafc", borderRadius: 10 }}>
+                  <img src={editingProduct.image} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }} onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }} />
+                  <div style={{ fontSize: 12, color: "#64748b" }}>Preview • ID: {String(editingProduct.id).slice(0, 8)}...</div>
+                </div>
+                <input className="bz-input" value={editingProduct.title} onChange={e => setEditingProduct({...editingProduct, title: e.target.value})} placeholder="Title" />
+                <div style={{ display: "flex", gap: 9 }}>
+                  <input className="bz-input" type="number" value={editingProduct.price} onChange={e => setEditingProduct({...editingProduct, price: e.target.value})} placeholder="Price ₹" />
+                  <input className="bz-input" type="number" value={editingProduct.mrp} onChange={e => setEditingProduct({...editingProduct, mrp: e.target.value})} placeholder="MRP ₹" />
+                </div>
+                <select className="bz-select" value={editingProduct.category} onChange={e => setEditingProduct({...editingProduct, category: e.target.value})}>
+                  <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
+                </select>
+                <input className="bz-input" value={editingProduct.image} onChange={e => setEditingProduct({...editingProduct, image: e.target.value})} placeholder="Image URL" />
+                <input className="bz-input" value={editingProduct.affiliate_url} onChange={e => setEditingProduct({...editingProduct, affiliate_url: e.target.value})} placeholder="Affiliate URL" />
+                <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                  <button className="bz-primary" style={{ flex: 1 }} onClick={updateProduct}>💾 Save Changes</button>
+                  <button className="bz-ghost" style={{ flex: 1 }} onClick={() => setEditingProduct(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= LOGIN MODAL ================= */}
         {showLogin && (
           <div className="bz-modal" onClick={() => setShowLogin(false)}>
@@ -1410,7 +1545,7 @@ export default function Home() {
         {/* ================= ADMIN MODAL ================= */}
         {showAdmin && (
           <div className="bz-modal" onClick={() => setShowAdmin(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
+            <div className="bz-modal-card" style={{ maxWidth: 720 }} onClick={e => e.stopPropagation()}>
               <div className="bz-drawer-head">
                 <h3>⚙️ Admin Panel - {user?.email}</h3>
                 <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
@@ -1425,8 +1560,13 @@ export default function Home() {
                 ) : (
                   <>
                     <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-                      {["products", "users", "sliders", "clicks", "logins"].map(t => (
-                        <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); if (t === "logins") { loadAllUsers(); loadLoginHistory(); } }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t === "logins" ? "Logins" : t}</button>
+                      {["products", "users", "sliders", "clicks", "logs"].map(t => (
+                        <button key={t} onClick={() => { 
+                          setAdminTab(t); 
+                          if (t === "users") loadAllUsers(); 
+                          if (t === "clicks") loadClicks();
+                          if (t === "logs") loadLogs();
+                        }} style={{ flex: 1, minWidth: 70, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t}</button>
                       ))}
                       <button onClick={() => { setAdminTab("approvals"); loadApprovals(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "approvals" ? "#7c3aed" : "#f1f5f9", color: adminTab === "approvals" ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>
                         Approvals {approvals.length > 0 ? `(${approvals.length})` : ""}
@@ -1465,55 +1605,67 @@ export default function Home() {
                               {showHiddenTab ? "No hidden products." : "No active products."}
                             </p>
                           ) : (showHiddenTab ? hiddenProducts : products).map(p => (
-                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
+                            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
                               <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
-                              <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} — <b>₹{p.price}</b></span>
+                              <span style={{ fontSize: 12.5, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} — <b>₹{p.price}</b></span>
                               {showHiddenTab ? (
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✏️ Edit</button>
-                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Show Again</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>✅ Show</button>
+                                  <button onClick={() => startEdit(p)} style={{ background: "#dbeafe", color: "#1e40af", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>✏️ Edit</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>🗑️ Delete</button>
                                 </div>
                               ) : (
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✏️ Edit</button>
-                                  <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>👁️ Hide</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                                  <button onClick={() => startEdit(p)} style={{ background: "#dbeafe", color: "#1e40af", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>✏️ Edit</button>
+                                  <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>👁️ Hide</button>
+                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 10px", borderRadius: 7, fontWeight: 800, fontSize: 11 }}>🗑️ Delete</button>
                                 </div>
                               )}
                             </div>
                           ))}
                         </div>
-                        {!isSuperAdmin && <p style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 700, marginTop: 8 }}>⏳ Note: Admin ka Edit / Delete Super Admin ke Approve ke baad hi complete hoga.</p>}
                       </div>
                     )}
 
-                    {/* === USERS TAB === */}
+                    {/* === USERS TAB (with Online Status) === */}
                     {adminTab === "users" && (
                       <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+                          <p style={{ fontSize: 11.5, color: "#16a34a", fontWeight: 800 }}>🟢 = Online (last 5 min)  •  ⚪ = Offline</p>
+                          <button className="bz-ghost" style={{ padding: "6px 12px", fontSize: 11 }} onClick={loadAllUsers}>🔄 Refresh</button>
+                        </div>
                         <input className="bz-input" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
-                        {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
-                          <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                            <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""} {u.email === user?.email ? " (YOU)" : ""}</div>
-                            <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Logins: {u.login_count || 0} | Last Login: {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-IN") : "Never"} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
-                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                              {u.is_blocked ? (
-                                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                  <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>⛔ INACTIVE</span>
-                                  <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
+                        {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => {
+                          const status = getOnlineStatus(u);
+                          return (
+                            <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+                                <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""}</div>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: status.online ? "#16a34a" : "#94a3b8", display: "flex", alignItems: "center", gap: 5 }}>
+                                  <span className={status.online ? "bz-online-dot" : "bz-offline-dot"}></span>
+                                  {status.text}
                                 </div>
-                              ) : (
-                                <div style={{ display: "flex", gap: 6 }}>
-                                  <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
-                                  <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
-                                </div>
-                              )}
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
-                              <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => makeAdmin(u.email, !u.is_admin)}>{u.is_admin ? "Remove Admin" : "Make Admin"}</button>
+                              </div>
+                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>Coins: {u.coins || 0} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                                {u.is_blocked ? (
+                                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                    <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>⛔ INACTIVE</span>
+                                    <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: "flex", gap: 6 }}>
+                                    <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
+                                    <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                                  </div>
+                                )}
+                                <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, 50)}>+50 🪙</button>
+                                <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => addCoinsToUser(u, -50)}>-50 🪙</button>
+                                <button className="bz-ghost" style={{ padding: "6px 10px", fontSize: 11 }} onClick={() => makeAdmin(u.email, !u.is_admin)}>{u.is_admin ? "Remove Admin" : "Make Admin"}</button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                         {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>No users found. Someone needs to signup first.</p>}
                       </div>
                     )}
@@ -1546,59 +1698,6 @@ export default function Home() {
                               <button style={{ background: "#fee2e2", color: "#dc2626", padding: "6px 12px", borderRadius: 8, fontSize: 12, fontWeight: 800 }} onClick={() => deleteSlider(s.id)}>Delete</button>
                             </div>
                           ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* === LOGINS TAB - NEW === */}
-                    {adminTab === "logins" && (
-                      <div>
-                        <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12, padding: 12, marginBottom: 12 }}>
-                          <div style={{ fontSize: 13, fontWeight: 800 }}>👤 Tumhara Status: {user?.email}</div>
-                          <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>{isSuperAdmin ? "👑 SUPER ADMIN" : "👑 ADMIN"} • {user?.email === ADMIN_EMAIL ? "Super Admin" : "Admin"} • Coins: {coins} • Is waqt Login ho ✅</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                          <input className="bz-input" style={{ flex: 1, minWidth: 160 }} value={loginSearch} onChange={e => setLoginSearch(e.target.value)} placeholder="Search by email..." />
-                          <select className="bz-select" value={loginFilter} onChange={e => setLoginFilter(e.target.value)}>
-                            <option value="all">All Users</option>
-                            <option value="admin">Admin Only</option>
-                            <option value="blocked">Blocked Only</option>
-                            <option value="today">Today Login</option>
-                          </select>
-                          <button className="bz-ghost" style={{ padding: "9px 14px", fontSize: 12 }} onClick={() => { loadAllUsers(); loadLoginHistory(); }}>🔄 Refresh</button>
-                        </div>
-                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>👥 Sab Users ka Status + Login History</h4>
-                        <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
-                          {allUsers.filter(u => {
-                            if (loginSearch && !u.email.toLowerCase().includes(loginSearch.toLowerCase())) return false;
-                            if (loginFilter === "admin" && !u.is_admin) return false;
-                            if (loginFilter === "blocked" && !u.is_blocked) return false;
-                            if (loginFilter === "today" && (!u.last_login_at || new Date(u.last_login_at).toDateString() !== new Date().toDateString())) return false;
-                            return true;
-                          }).map(u => (
-                            <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, background: u.email === user?.email ? "#f5f3ff" : "#fff" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
-                                <b style={{ fontSize: 13 }}>{u.email} {u.email === user?.email ? "(YOU)" : ""}</b>
-                                <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: u.is_blocked ? "#fee2e2" : "#dcfce7", color: u.is_blocked ? "#dc2626" : "#16a34a" }}>{u.is_blocked ? "🚫 BLOCKED" : "🟢 ACTIVE"}</span>
-                              </div>
-                              <div style={{ fontSize: 12, color: "#64748b", marginTop: 4, lineHeight: 1.6 }}>
-                                {u.is_admin ? "👑 ADMIN • " : "👤 User • "} Coins: {u.coins || 0} • Total Logins: {u.login_count || 0}<br />
-                                Last Login: {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-IN") : "Kabhi login nahi hua"}<br />
-                                Joined: {u.created_at ? new Date(u.created_at).toLocaleString("en-IN") : "-"}
-                              </div>
-                            </div>
-                          ))}
-                          {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8", textAlign: "center", padding: 20 }}>No users found.</p>}
-                        </div>
-                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>🕒 Recent Login History ({loginHistory.length})</h4>
-                        <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
-                          {loginHistory.filter(h => !loginSearch || (h.email || "").toLowerCase().includes(loginSearch.toLowerCase())).slice(0, 50).map((h, i) => (
-                            <div key={h.id || i} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "8px 10px", background: "#f8fafc", borderRadius: 8, fontSize: 12 }}>
-                              <span style={{ fontWeight: 700 }}>{h.email} {h.email === user?.email ? "(YOU)" : ""}</span>
-                              <span style={{ color: "#64748b" }}>{h.created_at ? new Date(h.created_at).toLocaleString("en-IN") : "-"}</span>
-                            </div>
-                          ))}
-                          {loginHistory.length === 0 && <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: 16 }}>Abhi tak koi login history nahi hai. Naya login hote hi yaha dikhega.</p>}
                         </div>
                       </div>
                     )}
@@ -1717,6 +1816,40 @@ export default function Home() {
                       </div>
                     )}
 
+                    {/* === LOGS TAB (NEW) === */}
+                    {adminTab === "logs" && (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                          <h4 style={{ fontSize: 14, fontWeight: 800 }}>📋 Activity Logs ({filteredLogs.length})</h4>
+                          <button className="bz-ghost" style={{ padding: "6px 12px", fontSize: 11 }} onClick={loadLogs}>🔄 Refresh</button>
+                        </div>
+                        <select className="bz-select" value={logFilter} onChange={e => setLogFilter(e.target.value)} style={{ marginBottom: 12, width: "100%" }}>
+                          <option value="all">All Actions ({logs.length})</option>
+                          {uniqueActions.map(a => <option key={a} value={a}>{a} ({logs.filter(l => l.action === a).length})</option>)}
+                        </select>
+                        {filteredLogs.length === 0 ? (
+                          <div style={{ textAlign: "center", padding: 40, background: "#f8fafc", borderRadius: 12 }}>
+                            <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
+                            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>No activity logs yet.</p>
+                          </div>
+                        ) : (
+                          <div style={{ maxHeight: 420, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                            {filteredLogs.map(log => (
+                              <div key={log.id} className="bz-log-item">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, gap: 8 }}>
+                                  <span className={`bz-log-action ${log.action}`}>{log.action}</span>
+                                  <span style={{ color: "#94a3b8", fontSize: 10, whiteSpace: "nowrap" }}>{new Date(log.created_at).toLocaleString("en-IN")}</span>
+                                </div>
+                                <div style={{ color: "#475569", fontSize: 11.5 }}>
+                                  <b style={{ color: "#0f172a" }}>{log.user_email}</b>{log.details && <span> — {log.details}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {/* === APPROVALS TAB === */}
                     {adminTab === "approvals" && (
                       <div>
@@ -1729,8 +1862,6 @@ export default function Home() {
                               From: <b>{req.requested_by}</b>
                               {req.type === 'delete_product'
                                 ? <span> • Delete Product: <b>{req.target_email}</b></span>
-                                : req.type === 'edit_product'
-                                ? <span> • Edit Product: <b>{(() => { try { const d = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : JSON.parse(req.target_email); return d.title || req.target_email; } catch (e) { return req.target_email; } })()}</b>{(() => { try { const d = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : JSON.parse(req.target_email); return d.price ? <span> • New Price: <b>₹{d.price}</b> (MRP ₹{d.mrp})</span> : null; } catch (e) { return null; } })()}</span>
                                 : <span> → Target: <b>{req.target_email}</b></span>}
                               {req.type === 'coins' && <span> • Coins: <b>+{req.amount}</b></span>}
                               {req.type === 'make_admin' && <span> • Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
@@ -1749,35 +1880,6 @@ export default function Home() {
                     )}
                   </>
                 )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= EDIT PRODUCT MODAL - NEW ================= */}
-        {editingProduct && (
-          <div className="bz-modal" onClick={() => setEditingProduct(null)}>
-            <div className="bz-modal-card" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: 24 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <h2 style={{ fontSize: 19, fontWeight: 800 }}>✏️ Edit Product</h2>
-                  <button className="bz-close" style={{ background: "#f1f5f9", color: "#333" }} onClick={() => setEditingProduct(null)}>✕</button>
-                </div>
-                <p style={{ fontSize: 12.5, color: "#64748b", marginBottom: 14 }}>Editing: <b>{editingProduct.title}</b>{!isSuperAdmin && <span style={{ color: "#f59e0b", fontWeight: 800 }}> • Approval ke baad hi update hoga ⏳</span>}</p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input className="bz-input" value={editProd.title} onChange={e => setEditProd({ ...editProd, title: e.target.value })} placeholder="Product title" />
-                  <div style={{ display: "flex", gap: 9 }}>
-                    <input className="bz-input" value={editProd.price} onChange={e => setEditProd({ ...editProd, price: e.target.value })} placeholder="Price ₹" type="number" />
-                    <input className="bz-input" value={editProd.mrp} onChange={e => setEditProd({ ...editProd, mrp: e.target.value })} placeholder="MRP ₹" type="number" />
-                  </div>
-                  <select className="bz-select" value={editProd.category} onChange={e => setEditProd({ ...editProd, category: e.target.value })}>
-                    <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
-                  </select>
-                  <input className="bz-input" value={editProd.image} onChange={e => setEditProd({ ...editProd, image: e.target.value })} placeholder="Image URL (https://...)" />
-                  <input className="bz-input" value={editProd.affiliate_url} onChange={e => setEditProd({ ...editProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
-                  <button className="bz-primary" style={{ width: "100%" }} onClick={saveEditProduct}>{isSuperAdmin ? "💾 SAVE CHANGES" : "📩 SEND FOR APPROVAL"}</button>
-                  <button className="bz-ghost" style={{ width: "100%" }} onClick={() => setEditingProduct(null)}>Cancel</button>
-                </div>
               </div>
             </div>
           </div>
