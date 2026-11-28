@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -8,6 +7,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 const ADMIN_EMAIL = "run4ravish@gmail.com";
+
 /* ============================================================
    DATA
 ============================================================ */
@@ -70,6 +70,7 @@ const CSS = `
 @keyframes bzShine{0%{background-position:0% 50%}100%{background-position:300% 50%}}
 @keyframes bzPulseGlow{0%,100%{filter:drop-shadow(0 2px 8px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 2px 14px rgba(236,72,153,.7))}}
 @keyframes bzSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes bzAnnounce{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .bz-header{position:sticky;top:0;z-index:120;background:linear-gradient(135deg,#4338ca 0%,#7c3aed 45%,#db2777 100%);color:#fff;box-shadow:0 8px 28px rgba(124,58,237,.4)}
 .bz-topstrip{background:linear-gradient(90deg,#1e1b4b,#6d28d9,#db2777);color:#f5d0fe;font-size:11.5px;display:flex;justify-content:space-between;gap:10px;padding:6px 18px;flex-wrap:wrap}
 .bz-topstrip b{color:#fde047}
@@ -89,6 +90,7 @@ const CSS = `
 .bz-hamburger{display:none;width:42px;height:42px;border-radius:11px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:19px;align-items:center;justify-content:center;transition:.2s;flex-shrink:0}
 .bz-hamburger:hover{background:rgba(255,255,255,.34);transform:scale(1.05)}
 .bz-mobile-search{display:none;max-width:none;margin:0 16px 12px}
+.bz-announce{background:linear-gradient(90deg,#f59e0b,#ef4444,#f59e0b);background-size:200% 100%;color:#fff;text-align:center;padding:7px 14px;font-size:12.5px;font-weight:800;animation:bzAnnounce 4s ease infinite;letter-spacing:.3px}
 .bz-catbar{background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 2px 12px rgba(15,23,42,.05)}
 .bz-catbar-inner{max-width:1280px;margin:0 auto;display:flex;gap:8px;padding:10px 18px;overflow-x:auto;scrollbar-width:none}
 .bz-catbar-inner::-webkit-scrollbar{display:none}
@@ -273,16 +275,25 @@ export default function Home() {
   const [clickCount, setClickCount] = useState(0);
   const [clicks, setClicks] = useState([]);
   const [clickFilter, setClickFilter] = useState("daily");
-  // === NEW: Edit Product + Login History ===
   const [editingProduct, setEditingProduct] = useState(null);
   const [editProd, setEditProd] = useState({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
   const [loginHistory, setLoginHistory] = useState([]);
   const [loginSearch, setLoginSearch] = useState("");
   const [loginFilter, setLoginFilter] = useState("all");
 
+  // === LEVEL 3: Permissions + Ban + Announcement ===
+  const [adminRole, setAdminRole] = useState("full_admin");
+  const [adminPerms, setAdminPerms] = useState({ products: true, users: true, sliders: true, clicks: true, logins: true, approvals: true });
+  const [banTarget, setBanTarget] = useState(null);
+  const [banReason, setBanReason] = useState("");
+  const [banDays, setBanDays] = useState("7");
+  const [announcement, setAnnouncement] = useState("");
+  const [newAnnouncement, setNewAnnouncement] = useState("");
+  const [banList, setBanList] = useState([]);
+
   const notify = (msg, type = "success") => setToast({ msg, type, id: Date.now() });
 
-  /* ---------- LOGIN HISTORY (no new query needed) ---------- */
+  /* ---------- LOGIN HISTORY ---------- */
   const recordLogin = async (authUser, prof) => {
     const now = new Date().toISOString();
     const entry = { id: Date.now(), email: authUser.email, user_id: authUser.id, created_at: now, status: prof?.is_blocked ? "blocked" : "success" };
@@ -316,7 +327,8 @@ export default function Home() {
     if (error) { console.log("Profile insert error:", error.message); return { id: authUser.id, email: authUser.email, name: authUser.email.split("@")[0], coins: 10, is_admin: authUser.email === ADMIN_EMAIL }; }
     return newProf;
   };
-    const handleSignup = async () => {
+
+  const handleSignup = async () => {
     if (!email.includes("@")) return notify("Enter a valid email", "error");
     if (password.length < 6) return notify("Password must be at least 6 characters", "error");
     setAuthLoading(true);
@@ -336,15 +348,11 @@ export default function Home() {
     const prof = await loadProfile(data.user);
     if (prof?.is_blocked) {
       await supabase.auth.signOut();
-      return notify("Your account has been blocked by Admin!", "error");
+      const reason = prof?.ban_reason ? ` Reason: ${prof.ban_reason}` : "";
+      const until = prof?.banned_until ? ` Until: ${new Date(prof.banned_until).toLocaleString("en-IN")}.` : "";
+      return notify(`Your account has been blocked.${reason}${until}`, "error");
     }
-    const u = {
-      id: data.user.id,
-      email: data.user.email,
-      name: prof?.name || email.split("@")[0],
-      is_admin: prof?.is_admin === true,
-      coins: prof?.coins || 0
-    };
+    const u = { id: data.user.id, email: data.user.email, name: prof?.name || email.split("@")[0], is_admin: prof?.is_admin === true, coins: prof?.coins || 0 };
     setUser(u);
     setCoins(prof?.coins || 0);
     if (prof?.is_admin === true || data.user.email === ADMIN_EMAIL) setIsAdmin(true);
@@ -392,6 +400,98 @@ export default function Home() {
     if (data) setAllUsers(data);
   };
 
+  /* === LEVEL 3.1: PERMISSIONS + BAN + ANNOUNCEMENT === */
+
+  const loadPerms = async () => {
+    if (!user) return;
+    if (user.email === ADMIN_EMAIL) {
+      setAdminRole("super_admin");
+      setAdminPerms({ products: true, users: true, sliders: true, clicks: true, logins: true, approvals: true });
+      return;
+    }
+    try {
+      const { data } = await supabase.from("profiles").select("admin_role, admin_perms").eq("id", user.id).single();
+      if (data) {
+        setAdminRole(data.admin_role || "full_admin");
+        if (data.admin_perms) {
+          const p = typeof data.admin_perms === "string" ? JSON.parse(data.admin_perms) : data.admin_perms;
+          setAdminPerms({ products: true, users: true, sliders: true, clicks: true, logins: true, approvals: true, ...p });
+        }
+      }
+    } catch (e) { console.log("loadPerms:", e?.message); }
+  };
+
+  const canSee = (tab) => {
+    if (isSuperAdmin) return true;
+    if (adminRole === "full_admin") return true;
+    if (adminRole === "limited_admin") return adminPerms[tab] === true;
+    return false;
+  };
+
+  const checkAutoUnblock = async () => {
+    try {
+      const now = new Date().toISOString();
+      const { data } = await supabase.from("profiles").select("id, email")
+        .not("banned_until", "is", null)
+        .lt("banned_until", now);
+      if (data && data.length > 0) {
+        for (const u of data) {
+          await supabase.from("profiles").update({ is_blocked: false, banned_until: null, ban_reason: null }).eq("id", u.id);
+        }
+        loadAllUsers();
+      }
+    } catch (e) { console.log("checkAutoUnblock:", e?.message); }
+  };
+
+  const banUser = async () => {
+    if (!banTarget || !isSuperAdmin) return notify("Only Super Admin can ban", "error");
+    if (!banReason.trim()) return notify("Enter a ban reason", "error");
+    const days = Number(banDays) || 7;
+    const until = new Date(); until.setDate(until.getDate() + days);
+    const { error } = await supabase.from("profiles").update({
+      is_blocked: true,
+      banned_until: until.toISOString(),
+      ban_reason: banReason.trim(),
+    }).eq("id", banTarget.id);
+    if (error) return notify("Ban failed: " + error.message, "error");
+    notify(`${banTarget.email} banned for ${days} days ⛔`);
+    setBanTarget(null); setBanReason(""); setBanDays("7");
+    loadAllUsers(); loadBanList();
+  };
+
+  const unbanUser = async (u) => {
+    const { error } = await supabase.from("profiles").update({ is_blocked: false, banned_until: null, ban_reason: null }).eq("id", u.id);
+    if (error) return notify("Unban failed: " + error.message, "error");
+    notify("User unbanned ✅");
+    loadAllUsers(); loadBanList();
+  };
+
+  const loadBanList = async () => {
+    try {
+      const { data } = await supabase.from("profiles").select("*").eq("is_blocked", true).order("banned_until", { ascending: false });
+      setBanList(data || []);
+    } catch (e) {}
+  };
+
+  const saveAnnouncement = async () => {
+    try {
+      localStorage.setItem("bazaru_announcement", newAnnouncement);
+      setAnnouncement(newAnnouncement);
+      try {
+        await supabase.from("site_settings").upsert({ key: "announcement", value: newAnnouncement, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      } catch (e) { console.log("site_settings save skipped:", e?.message); }
+      notify("Announcement saved ✅");
+    } catch (e) { notify("Save failed", "error"); }
+  };
+
+  const saveAdminPerms = async (targetId, role, perms) => {
+    if (!isSuperAdmin) return notify("Only Super Admin can change permissions", "error");
+    const { error } = await supabase.from("profiles").update({ admin_role: role, admin_perms: perms }).eq("id", targetId);
+    if (error) return notify("Error: " + error.message, "error");
+    notify("Permissions updated ✅");
+    loadAllUsers();
+  };
+
   const loadApprovals = async () => {
     const { data } = await supabase.from("approvals").select("*").eq("status", "pending").order("created_at", { ascending: false });
     if (data) setApprovals(data);
@@ -404,7 +504,6 @@ export default function Home() {
     setHiddenProducts(data || []);
   };
 
-  // === SEND REQUEST - for Admin ===
   const sendApprovalRequest = async (type, targetUser, extra = {}) => {
     const { error } = await supabase.from("approvals").insert([{
       type: type,
@@ -420,7 +519,6 @@ export default function Home() {
     loadApprovals();
   };
 
-  // === APPROVE - Super Admin only ===
   const approveRequest = async (req) => {
     if (!isSuperAdmin) return notify("Only Super Admin can approve!", "error");
     if (req.type === 'block') {
@@ -445,11 +543,8 @@ export default function Home() {
       setHiddenProducts(prev => prev.filter(x => x.id !== req.target_id));
     }
     if (req.type === 'edit_product') {
-      // Edit approval: approvals table me product ka naya data target_email / extra me hota hai
-      // Hum pehle approvals row se data nikalne ki koshish karte hain, nahi mila to products se fallback
       let newData = null;
-      try { newData = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : null; } catch (e) { newData = null; }
-      // Agar product_data column nahi hai to target_email me JSON ho sakta hai (backward compat)
+      try { newData = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : null; } catch (e) {}
       if (!newData && req.target_email && req.target_email.startsWith("{")) {
         try { const parsed = JSON.parse(req.target_email); if (parsed.title) newData = parsed; } catch (e) {}
       }
@@ -461,12 +556,12 @@ export default function Home() {
         setProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...clean } : x));
         setHiddenProducts(prev => prev.map(x => x.id === req.target_id ? { ...x, ...clean } : x));
       } else {
-        return notify("Edit data nahi mila! Admin se dobara Edit request bhejo.", "error");
+        return notify("Edit data not found!", "error");
       }
     }
     await supabase.from("approvals").update({ status: 'approved' }).eq("id", req.id);
     notify("Approved ✅ Action completed!");
-    loadAllUsers(); loadApprovals(); loadLoginHistory();
+    loadAllUsers(); loadApprovals(); loadLoginHistory(); loadBanList();
   };
 
   const rejectRequest = async (req) => {
@@ -476,7 +571,6 @@ export default function Home() {
     loadApprovals();
   };
 
-  // === 4 ACTIONS - Now go through approval for non-super-admin ===
   const toggleBlock = async (u) => {
     if (isSuperAdmin) {
       await supabase.from("profiles").update({ is_blocked: !u.is_blocked }).eq("id", u.id);
@@ -523,21 +617,14 @@ export default function Home() {
     }
   };
 
-  // === UNBLOCK USER - Product Show jaisa! ===
-  const unblockUser = async (u) => {
-    const { error } = await supabase.from("profiles").update({ is_blocked: false }).eq("id", u.id);
-    if (error) return notify("User unblock failed: " + error.message, "error");
-    await loadAllUsers();
-    notify("User Unblocked ✅ Ab Login kar payega");
-  };
-
   const handleAdminOpen = () => {
     if (!user) return notify("Please Login first!", "error");
     if (user.is_admin !== true && user.email !== ADMIN_EMAIL) return notify("Only Admin can open this!", "error");
-    setIsAdmin(true); loadAllUsers(); loadApprovals(); loadHiddenProducts(); loadLoginHistory(); setShowAdmin(true);
+    setIsAdmin(true); loadAllUsers(); loadApprovals(); loadHiddenProducts(); loadLoginHistory();
+    loadPerms(); checkAutoUnblock();
+    setShowAdmin(true);
   };
 
-  // === ADMIN CLICKS HELPERS ===
   const loadClicks = async () => {
     const { data } = await supabase.from("clicks").select("*").order("created_at", { ascending: false });
     setClicks(data || []);
@@ -548,10 +635,7 @@ export default function Home() {
     const d = new Date(dateStr);
     const now = new Date();
     if (period === "daily") return d.toDateString() === now.toDateString();
-    if (period === "weekly") {
-      const diff = (now - d) / (1000 * 60 * 60 * 24);
-      return diff < 7;
-    }
+    if (period === "weekly") return (now - d) / (1000 * 60 * 60 * 24) < 7;
     if (period === "monthly") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
     if (period === "yearly") return d.getFullYear() === now.getFullYear();
     return true;
@@ -576,38 +660,21 @@ export default function Home() {
       if (data?.session?.user) {
         const prof = await loadProfile(data.session.user);
         if (prof?.is_blocked) { await supabase.auth.signOut(); return; }
-        setUser({
-          id: data.session.user.id,
-          email: data.session.user.email,
-          name: prof?.name || "User",
-          is_admin: prof?.is_admin === true
-        });
+        setUser({ id: data.session.user.id, email: data.session.user.email, name: prof?.name || "User", is_admin: prof?.is_admin === true });
         setCoins(prof?.coins || 0);
         if (prof?.is_admin === true || data.session.user.email === ADMIN_EMAIL) setIsAdmin(true);
       }
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setShowResetPassword(true);
-        setShowLogin(false);
-      }
+      if (event === 'PASSWORD_RECOVERY') { setShowResetPassword(true); setShowLogin(false); }
     });
 
     const loadProducts = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false });
-
-      if (!error && data && data.length > 0) {
-        setProducts(data);
-      } else {
-        setProducts(DEFAULT_PRODUCTS);
-        if (error) console.log("Supabase Error:", error.message);
-      }
+      const { data, error } = await supabase.from("products").select("*").eq("is_active", true).order("created_at", { ascending: false });
+      if (!error && data && data.length > 0) setProducts(data);
+      else { setProducts(DEFAULT_PRODUCTS); if (error) console.log("Supabase Error:", error.message); }
       setLoading(false);
     };
     loadProducts();
@@ -615,6 +682,18 @@ export default function Home() {
     supabase.from("sliders").select("*").eq("is_active", true).order("created_at", { ascending: true }).then(({ data }) => {
       if (data && data.length > 0) setSlides(data);
     });
+
+    // Announcement load - try DB first, then localStorage
+    (async () => {
+      try {
+        const { data } = await supabase.from("site_settings").select("value").eq("key", "announcement").single();
+        if (data?.value) { setAnnouncement(data.value); setNewAnnouncement(data.value); return; }
+      } catch (e) {}
+      try {
+        const a = localStorage.getItem("bazaru_announcement");
+        if (a) { setAnnouncement(a); setNewAnnouncement(a); }
+      } catch (e) {}
+    })();
 
     try {
       const sc = localStorage.getItem("bazaru_cart_v2");
@@ -625,9 +704,7 @@ export default function Home() {
       if (lh) setLoginHistory(JSON.parse(lh));
     } catch (e) {}
 
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    return () => { listener.subscription.unsubscribe(); };
   }, []);
 
   /* ---------- COUNTDOWN ---------- */
@@ -657,7 +734,7 @@ export default function Home() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || showResetPassword || !!selected || !!editingProduct;
+  const anyOpen = menuOpen || showCart || showWish || showLogin || showAdmin || showCoinShop || showResetPassword || !!selected || !!editingProduct || !!banTarget;
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.body.style.overflow = anyOpen ? "hidden" : "";
@@ -673,16 +750,11 @@ export default function Home() {
 
   const addToCart = (p) => {
     const exists = cart.find(c => c.id === p.id);
-    const next = exists
-      ? cart.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c)
-      : [...cart, { id: p.id, title: p.title, price: p.price, image: p.image, qty: 1 }];
+    const next = exists ? cart.map(c => c.id === p.id ? { ...c, qty: c.qty + 1 } : c) : [...cart, { id: p.id, title: p.title, price: p.price, image: p.image, qty: 1 }];
     saveCart(next);
     notify("Added to cart 🛒", "success");
   };
-  const changeQty = (id, delta) => {
-    const next = cart.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c);
-    saveCart(next);
-  };
+  const changeQty = (id, delta) => { saveCart(cart.map(c => c.id === id ? { ...c, qty: Math.max(1, c.qty + delta) } : c)); };
   const removeFromCart = (id) => { saveCart(cart.filter(c => c.id !== id)); notify("Removed from cart", "error"); };
 
   const toggleWish = (id) => {
@@ -690,20 +762,9 @@ export default function Home() {
     else { saveWish([...wishlist, id]); notify("Added to wishlist ❤️", "success"); }
   };
 
-  /* ---------- BUY NOW CLICK TRACKING ---------- */
   const handleBuyClick = async (product) => {
-    console.log("CLICK:", product.title);
-    const { error } = await supabase.from("clicks").insert([{
-      product_id: product.id,
-      product_title: product.title,
-      email: user?.email || "guest",
-      created_at: new Date().toISOString()
-    }]);
-    if (error) console.log("CLICK ERROR:", error.message);
-    else {
-      console.log("CLICK SAVED");
-      setClickCount(c => c + 1);
-    }
+    const { error } = await supabase.from("clicks").insert([{ product_id: product.id, product_title: product.title, email: user?.email || "guest", created_at: new Date().toISOString() }]);
+    if (!error) setClickCount(c => c + 1);
     window.open(product.affiliate_url, "_blank");
   };
 
@@ -721,34 +782,24 @@ export default function Home() {
 
   const redeemCoins = async (need, reward) => {
     if (!user) return notify("Please Login first!", "error");
-    if (coins < need) return notify(`You have only ${coins} coins, need ${need}!`, "error");
+    if (coins < need) return notify(`You only have ${coins} coins, need ${need}!`, "error");
     const total = coins - need;
     setCoins(total);
     if (user?.id) await supabase.from("profiles").update({ coins: total }).eq("id", user.id);
     const code = "BAZARU" + need + Math.floor(Math.random() * 900 + 100);
-    notify(`🎉 Code received: ${code} - ${reward}`);
+    notify(`🎉 Code: ${code} - ${reward}`);
     navigator.clipboard?.writeText(code);
   };
 
   const addProduct = async () => {
     if (!newProd.title || !newProd.price) return notify("Fill title & price", "error");
     const slug = newProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-    const p = {
-      title: newProd.title,
-      slug,
-      price: Number(newProd.price),
-      mrp: Number(newProd.mrp) || Number(newProd.price) * 2,
-      image: newProd.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
-      category: newProd.category,
-      rating: "4.5",
-      affiliate_url: newProd.affiliate_url || "#",
-      is_active: true,
-    };
+    const p = { title: newProd.title, slug, price: Number(newProd.price), mrp: Number(newProd.mrp) || Number(newProd.price) * 2, image: newProd.image || "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800", category: newProd.category, rating: "4.5", affiliate_url: newProd.affiliate_url || "#", is_active: true };
     const { data, error } = await supabase.from("products").insert([p]).select().single();
     if (error) return notify("Supabase Error: " + error.message, "error");
     setProducts([data, ...products]);
     setNewProd({ title: "", price: "", mrp: "", category: "Electronics", image: "", affiliate_url: "" });
-    notify("Product added to Supabase ✅");
+    notify("Product added ✅");
   };
 
   const addSlider = async () => {
@@ -765,7 +816,6 @@ export default function Home() {
     notify("Slider deleted", "error");
   };
 
-  // === HIDE - Remove from active list, keep in database ===
   const hideProduct = async (id) => {
     const product = products.find(x => x.id === id);
     if (!product) return;
@@ -773,81 +823,64 @@ export default function Home() {
     if (error) return notify("Could not hide product: " + error.message, "error");
     setProducts(prev => prev.filter(x => x.id !== id));
     setHiddenProducts(prev => [product, ...prev.filter(x => x.id !== id)]);
-    notify("Product Hidden 👁️ - Wapas Show kar sakte ho", "error");
+    notify("Product Hidden 👁️", "error");
   };
 
-  // === SHOW - Restore hidden product ===
   const showProduct = async (p) => {
     const { error } = await supabase.from("products").update({ is_active: true }).eq("id", p.id);
     if (error) return notify("Could not show product: " + error.message, "error");
     setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
     setProducts(prev => [p, ...prev.filter(x => x.id !== p.id)]);
-    notify("Product wapas Show ho gaya ✅");
+    notify("Product visible again ✅");
   };
 
-  // === NEW: EDIT PRODUCT - Open Modal ===
   const openEditProduct = (p) => {
     setEditingProduct(p);
     setEditProd({ title: p.title || "", price: String(p.price ?? ""), mrp: String(p.mrp ?? ""), category: p.category || "Electronics", image: p.image || "", affiliate_url: p.affiliate_url || "" });
   };
 
-  // === NEW: EDIT PRODUCT - Save / Send for Approval ===
   const saveEditProduct = async () => {
     if (!editingProduct) return;
     if (!editProd.title || !editProd.price) return notify("Fill title & price", "error");
     const slug = editProd.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const updated = { title: editProd.title, slug, price: Number(editProd.price), mrp: Number(editProd.mrp) || Number(editProd.price) * 2, image: editProd.image || editingProduct.image, category: editProd.category, affiliate_url: editProd.affiliate_url || "#" };
-    // Super Admin -> Direct Edit
     if (isSuperAdmin) {
       const { error } = await supabase.from("products").update(updated).eq("id", editingProduct.id);
       if (error) return notify("Edit failed: " + error.message, "error");
       setProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
       setHiddenProducts(prev => prev.map(x => x.id === editingProduct.id ? { ...x, ...updated } : x));
       setEditingProduct(null);
-      return notify("Product Edited ✅");
+      return notify("Product edited ✅");
     }
-    // Normal Admin -> Approval ke baad hi complete hoga
-    // product_data column ho to usme JSON jayega, nahi ho to target_email me JSON + target_id me product id
     const payload = { type: 'edit_product', requested_by: user.email, target_email: editingProduct.title, target_id: editingProduct.id, status: 'pending', product_data: updated };
     let { error } = await supabase.from("approvals").insert([payload]);
     if (error) {
-      // Agar product_data column nahi hai to bina uske retry karo
       const fallback = { type: 'edit_product', requested_by: user.email, target_email: JSON.stringify(updated), target_id: editingProduct.id, status: 'pending' };
       const r2 = await supabase.from("approvals").insert([fallback]);
       if (r2.error) return notify("Error: " + r2.error.message, "error");
     }
     setEditingProduct(null);
-    notify("Edit Request Super Admin ko bhej di! ✅ Approval ke baad hi update hoga");
+    notify("Edit Request sent! ✅ Approval ke baad update hoga");
     loadApprovals();
   };
 
-  // === DELETE - Permanent delete; non-super-admin requires approval ===
   const deleteProduct = async (p) => {
-    if (!confirm(`Pakka Delete karna hai? ${p.title} hamesha ke liye ud jayega!`)) return;
+    if (!confirm(`Delete permanently? ${p.title} will be gone forever!`)) return;
     if (isSuperAdmin) {
       const { error } = await supabase.from("products").delete().eq("id", p.id);
       if (error) return notify("Delete failed: " + error.message, "error");
       setProducts(prev => prev.filter(x => x.id !== p.id));
       setHiddenProducts(prev => prev.filter(x => x.id !== p.id));
-      notify("Product Permanent Delete ho gaya 🗑️", "error");
+      notify("Product permanently deleted 🗑️", "error");
     } else {
-      const { error } = await supabase.from("approvals").insert([{
-        type: 'delete_product',
-        requested_by: user.email,
-        target_email: p.title,
-        target_id: p.id,
-        status: 'pending'
-      }]);
+      const { error } = await supabase.from("approvals").insert([{ type: 'delete_product', requested_by: user.email, target_email: p.title, target_id: p.id, status: 'pending' }]);
       if (error) return notify("Error: " + error.message, "error");
-      notify("Delete Request Super Admin ko bhej di! ✅ Approval ka wait karo");
+      notify("Delete Request sent to Super Admin! ✅");
       loadApprovals();
     }
   };
 
-  const checkout = () => {
-    notify("Demo checkout — complete your purchase on partner site 🚀");
-    setShowCart(false);
-  };
+  const checkout = () => { notify("Demo checkout 🚀"); setShowCart(false); };
 
   /* ---------- DERIVED ---------- */
   const cartCount = cart.reduce((a, c) => a + c.qty, 0);
@@ -855,11 +888,7 @@ export default function Home() {
   const wishProducts = products.filter(p => wishlist.includes(p.id));
 
   const filtered = useMemo(() => {
-    let list = products.filter(p =>
-      p.is_active !== false &&
-      (cat === "All" || p.category === cat) &&
-      p.title.toLowerCase().includes(search.toLowerCase())
-    );
+    let list = products.filter(p => p.is_active !== false && (cat === "All" || p.category === cat) && p.title.toLowerCase().includes(search.toLowerCase()));
     if (sort === "low") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "high") list = [...list].sort((a, b) => b.price - a.price);
     if (sort === "rating") list = [...list].sort((a, b) => Number(b.rating) - Number(a.rating));
@@ -869,6 +898,7 @@ export default function Home() {
 
   const off = (p) => Math.round((1 - p.price / p.mrp) * 100);
   const currentSlide = slides[slide % slides.length] || SLIDES[0];
+
   /* ============================================================
      RENDER
   ============================================================ */
@@ -876,6 +906,13 @@ export default function Home() {
     <>
       <style>{CSS}</style>
       <div className="bz-app">
+
+        {/* ================= ANNOUNCEMENT BANNER (NEW) ================= */}
+        {announcement && (
+          <div className="bz-announce">
+            📢 {announcement}
+          </div>
+        )}
 
         {/* ================= HEADER ================= */}
         <header className="bz-header">
@@ -885,70 +922,39 @@ export default function Home() {
           </div>
 
           <div className="bz-header-inner">
-            <button className="bz-hamburger" onClick={() => setMenuOpen(true)} aria-label="Open menu">☰</button>
-
+            <button className="bz-hamburger" onClick={() => setMenuOpen(true)}>☰</button>
             <div className="bz-logo" onClick={goHome}>
               <b className="bz-logo-text">BAZARU</b>
               <span>✦ Explore Plus+ ✦</span>
             </div>
-
             <div className="bz-search bz-desktop-search">
-              <input
-                value={search}
-                onChange={e => { setSearch(e.target.value); setPage(null); }}
-                placeholder="Search for products, brands and more..."
-              />
+              <input value={search} onChange={e => { setSearch(e.target.value); setPage(null); }} placeholder="Search for products, brands and more..." />
               <button className="bz-search-btn">🔍</button>
             </div>
-
             <div className="bz-header-actions">
-              <button className="bz-icon-btn" onClick={() => setShowCoinShop(true)}>
-                <span style={{ fontSize: 15 }}>🪙</span>
-                <span>{coins}</span>
-              </button>
-              <button className="bz-icon-btn" onClick={() => (user ? logout() : setShowLogin(true))}>
-                <span style={{ fontSize: 15 }}>👤</span>
-                <span className="bz-hide-sm">{user ? user.name : "Login"}</span>
-              </button>
-              <button className="bz-icon-btn" onClick={() => setShowWish(true)}>
-                <span style={{ fontSize: 15 }}>❤️</span>
-                <span className="bz-hide-sm">Wishlist</span>
-                {wishlist.length > 0 && <span className="bz-badge">{wishlist.length}</span>}
-              </button>
-              <button className="bz-icon-btn" onClick={() => setShowCart(true)}>
-                <span style={{ fontSize: 15 }}>🛒</span>
-                <span className="bz-hide-sm">Cart</span>
-                {cartCount > 0 && <span className="bz-badge">{cartCount}</span>}
-              </button>
+              <button className="bz-icon-btn" onClick={() => setShowCoinShop(true)}><span style={{ fontSize: 15 }}>🪙</span><span>{coins}</span></button>
+              <button className="bz-icon-btn" onClick={() => (user ? logout() : setShowLogin(true))}><span style={{ fontSize: 15 }}>👤</span><span className="bz-hide-sm">{user ? user.name : "Login"}</span></button>
+              <button className="bz-icon-btn" onClick={() => setShowWish(true)}><span style={{ fontSize: 15 }}>❤️</span><span className="bz-hide-sm">Wishlist</span>{wishlist.length > 0 && <span className="bz-badge">{wishlist.length}</span>}</button>
+              <button className="bz-icon-btn" onClick={() => setShowCart(true)}><span style={{ fontSize: 15 }}>🛒</span><span className="bz-hide-sm">Cart</span>{cartCount > 0 && <span className="bz-badge">{cartCount}</span>}</button>
             </div>
           </div>
 
           <div className="bz-search bz-mobile-search">
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(null); }}
-              placeholder="Search products..."
-            />
+            <input value={search} onChange={e => { setSearch(e.target.value); setPage(null); }} placeholder="Search products..." />
             <button className="bz-search-btn">🔍</button>
           </div>
         </header>
 
-        {/* ================= CATEGORY BAR ================= */}
         <div className="bz-catbar">
           <div className="bz-catbar-inner">
             {CATEGORIES.map(c => (
-              <button
-                key={c.name}
-                className={`bz-chip ${cat === c.name ? "active" : ""}`}
-                onClick={() => { setCat(c.name); setPage(null); }}
-              >
+              <button key={c.name} className={`bz-chip ${cat === c.name ? "active" : ""}`} onClick={() => { setCat(c.name); setPage(null); }}>
                 <span>{c.icon}</span>{c.name}
               </button>
             ))}
           </div>
         </div>
 
-        {/* ================= MAIN ================= */}
         <main className="bz-main">
           {page ? (
             <div className="bz-info">
@@ -962,88 +968,42 @@ export default function Home() {
                 <div className="bz-hero-content" key={slide}>
                   <h1>{currentSlide.title}</h1>
                   <p>{currentSlide.sub}</p>
-                  <button className="bz-ghost" style={{ background: "#fff", color: "#4f46e5", border: "none", fontWeight: 800 }} onClick={() => document.querySelector(".bz-grid")?.scrollIntoView({ behavior: "smooth" })}>
-                    {currentSlide.cta} →
-                  </button>
+                  <button className="bz-ghost" style={{ background: "#fff", color: "#4f46e5", border: "none", fontWeight: 800 }} onClick={() => document.querySelector(".bz-grid")?.scrollIntoView({ behavior: "smooth" })}>{currentSlide.cta} →</button>
                 </div>
                 <div className="bz-hero-emoji">{currentSlide.emoji}</div>
                 <div className="bz-hero-dots">
-                  {slides.map((_, i) => (
-                    <span key={i} className={`bz-dot ${i === slide ? "active" : ""}`} onClick={() => setSlide(i)} />
-                  ))}
+                  {slides.map((_, i) => <span key={i} className={`bz-dot ${i === slide ? "active" : ""}`} onClick={() => setSlide(i)} />)}
                 </div>
               </div>
 
               <div className="bz-section-head">
-                <div>
-                  <h2>🔥 Trending Deals</h2>
-                  <span className="bz-count">
-                    {loading ? "Loading deals..." : `${filtered.length} products found`}
-                  </span>
-                </div>
+                <div><h2>🔥 Trending Deals</h2><span className="bz-count">{loading ? "Loading deals..." : `${filtered.length} products found`}</span></div>
                 <select className="bz-select" value={sort} onChange={e => setSort(e.target.value)}>
-                  <option value="popular">Popularity</option>
-                  <option value="low">Price: Low to High</option>
-                  <option value="high">Price: High to Low</option>
-                  <option value="rating">Top Rated</option>
-                  <option value="discount">Biggest Discount</option>
+                  <option value="popular">Popularity</option><option value="low">Price: Low to High</option><option value="high">Price: High to Low</option><option value="rating">Top Rated</option><option value="discount">Biggest Discount</option>
                 </select>
               </div>
 
               {loading ? (
-                <div className="bz-empty">
-                  <div className="bz-spinner" />
-                  <h4>Products Loading...</h4>
-                  <p>Fetching deals from Supabase...</p>
-                </div>
+                <div className="bz-empty"><div className="bz-spinner" /><h4>Products Loading...</h4><p>Fetching deals from Supabase...</p></div>
               ) : filtered.length === 0 ? (
-                <div className="bz-empty">
-                  <div>🔍</div>
-                  <h4>No products found</h4>
-                  <p>Try a different search or category</p>
-                </div>
+                <div className="bz-empty"><div>🔍</div><h4>No products found</h4><p>Try a different search or category</p></div>
               ) : (
                 <div className="bz-grid">
                   {filtered.map((p, i) => (
-                    <div
-                      className="bz-card"
-                      key={`${p.id}-${cat}-${sort}`}
-                      style={{ animationDelay: `${Math.min(i, 12) * 45}ms` }}
-                    >
+                    <div className="bz-card" key={`${p.id}-${cat}-${sort}`} style={{ animationDelay: `${Math.min(i, 12) * 45}ms` }}>
                       <div className="bz-card-img" onClick={() => setSelected(p)}>
                         <span className="bz-off">{off(p)}% OFF</span>
-                        <button
-                          className={`bz-heart ${wishlist.includes(p.id) ? "active" : ""}`}
-                          onClick={(e) => { e.stopPropagation(); toggleWish(p.id); }}
-                        >
-                          {wishlist.includes(p.id) ? "❤️" : "🤍"}
-                        </button>
-                        <img
-                          src={p.image}
-                          alt={p.title}
-                          style={{ width: "100%", height: "170px", objectFit: "cover", borderRadius: "12px" }}
-                          onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }}
-                        />
+                        <button className={`bz-heart ${wishlist.includes(p.id) ? "active" : ""}`} onClick={(e) => { e.stopPropagation(); toggleWish(p.id); }}>{wishlist.includes(p.id) ? "❤️" : "🤍"}</button>
+                        <img src={p.image} alt={p.title} style={{ width: "100%", height: "170px", objectFit: "cover", borderRadius: "12px" }} onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }} />
                       </div>
-
                       <div className="bz-card-body">
                         <div className="bz-card-title" onClick={() => setSelected(p)}>{p.title}</div>
-
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                           <span className="bz-rate">{p.rating} ★</span>
                           <span className="bz-reviews">({getReviews(p.id).toLocaleString()})</span>
                         </div>
-
-                        <div className="bz-price">
-                          <b>₹{p.price}</b>
-                          <s>₹{p.mrp}</s>
-                          <em>{off(p)}% off</em>
-                        </div>
-
-                        <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}>
-                          🚚 Free Delivery • Bank Offer
-                        </div>
-
+                        <div className="bz-price"><b>₹{p.price}</b><s>₹{p.mrp}</s><em>{off(p)}% off</em></div>
+                        <div style={{ fontSize: 11, color: "#7c3aed", fontWeight: 700 }}>🚚 Free Delivery • Bank Offer</div>
                         <div className="bz-card-actions">
                           <button className="bz-btn-cart" onClick={() => addToCart(p)}>ADD TO CART</button>
                           <button className="bz-btn-buy" onClick={() => handleBuyClick(p)}>BUY NOW</button>
@@ -1064,18 +1024,11 @@ export default function Home() {
           )}
         </main>
 
-        {/* ================= FOOTER ================= */}
         <footer className="bz-footer">
           <div className="bz-footer-inner">
             <div>
-              <div className="bz-logo" style={{ marginBottom: 12 }} onClick={goHome}>
-                <b className="bz-logo-text" style={{ fontSize: 24 }}>BAZARU</b>
-                <span>✦ Explore Plus+ ✦</span>
-              </div>
-              <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>
-                India's fastest growing deals discovery platform. Best deals from Amazon, Flipkart,
-                Myntra & more — all in one place.
-              </p>
+              <div className="bz-logo" style={{ marginBottom: 12 }} onClick={goHome}><b className="bz-logo-text" style={{ fontSize: 24 }}>BAZARU</b><span>✦ Explore Plus+ ✦</span></div>
+              <p style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>India's fastest growing deals discovery platform. Best deals from Amazon, Flipkart, Myntra & more — all in one place.</p>
               <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
                 <a className="bz-social" href="https://instagram.com" target="_blank" rel="noopener noreferrer">📸</a>
                 <a className="bz-social" href="https://youtube.com" target="_blank" rel="noopener noreferrer">▶️</a>
@@ -1083,7 +1036,6 @@ export default function Home() {
                 <a className="bz-social" href="https://t.me" target="_blank" rel="noopener noreferrer">✈️</a>
               </div>
             </div>
-
             <div>
               <div className="bz-foot-title">ABOUT</div>
               <button className="bz-flink" onClick={() => goTo("about")}>About Us</button>
@@ -1091,7 +1043,6 @@ export default function Home() {
               <button className="bz-flink" onClick={() => goTo("disclaimer")}>Affiliate Disclosure</button>
               <button className="bz-flink" onClick={() => handleAdminOpen()}>Admin Panel</button>
             </div>
-
             <div>
               <div className="bz-foot-title">HELP</div>
               <button className="bz-flink" onClick={() => goTo("shipping")}>Shipping</button>
@@ -1099,7 +1050,6 @@ export default function Home() {
               <button className="bz-flink" onClick={() => goTo("contact")}>FAQ / Support</button>
               <button className="bz-flink" onClick={() => goTo("contact")}>Report a Deal</button>
             </div>
-
             <div>
               <div className="bz-foot-title">POLICY</div>
               <button className="bz-flink" onClick={() => goTo("privacy")}>Privacy Policy</button>
@@ -1107,33 +1057,18 @@ export default function Home() {
               <button className="bz-flink" onClick={() => goTo("refund")}>Refund Policy</button>
               <button className="bz-flink" onClick={() => goTo("shipping")}>Shipping Policy</button>
             </div>
-
             <div>
               <div className="bz-foot-title">NEWSLETTER</div>
-              <p style={{ fontSize: 12.5, color: "#94a3b8", lineHeight: 1.6 }}>
-                Get the best loot deals straight to your inbox.
-              </p>
+              <p style={{ fontSize: 12.5, color: "#94a3b8", lineHeight: 1.6 }}>Get the best loot deals straight to your inbox.</p>
               <div className="bz-news">
                 <input placeholder="Your email" />
-                <button className="bz-primary" style={{ padding: "10px 16px", fontSize: 13 }} onClick={() => notify("Subscribed! 🎉")}>
-                  Join
-                </button>
+                <button className="bz-primary" style={{ padding: "10px 16px", fontSize: 13 }} onClick={() => notify("Subscribed! 🎉")}>Join</button>
               </div>
-              <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: 14, lineHeight: 1.7 }}>
-                📧 support@bazaru.in<br />
-                📍 Domariaganj, UP - 272189
-              </p>
+              <p style={{ fontSize: 12.5, color: "#94a3b8", marginTop: 14, lineHeight: 1.7 }}>📧 support@bazaru.in<br />📍 Domariaganj, UP - 272189</p>
             </div>
           </div>
-
-          <div className="bz-foot-bottom">
-            <span>© 2026 BAZARU — All Rights Reserved</span>
-            <span>💳 Visa • Mastercard • UPI • COD</span>
-          </div>
-          <div className="bz-foot-note">
-            Disclaimer: BAZARU is an affiliate deals website. We may earn a commission from partner links
-            at no extra cost to you. Product delivery, returns and refunds are handled by the respective seller.
-          </div>
+          <div className="bz-foot-bottom"><span>© 2026 BAZARU — All Rights Reserved</span><span>💳 Visa • Mastercard • UPI • COD</span></div>
+          <div className="bz-foot-note">Disclaimer: BAZARU is an affiliate deals website. We may earn a commission from partner links at no extra cost to you. Product delivery, returns and refunds are handled by the respective seller.</div>
         </footer>
 
         {/* ================= MOBILE DRAWER ================= */}
@@ -1141,33 +1076,19 @@ export default function Home() {
           <>
             <div className="bz-overlay" onClick={() => setMenuOpen(false)} />
             <aside className="bz-drawer">
-              <div className="bz-drawer-head">
-                <h3>☰ Menu</h3>
-                <button className="bz-close" onClick={() => setMenuOpen(false)}>✕</button>
-              </div>
-
+              <div className="bz-drawer-head"><h3>☰ Menu</h3><button className="bz-close" onClick={() => setMenuOpen(false)}>✕</button></div>
               <div className="bz-drawer-user">
                 <div className="bz-avatar">{user ? user.name[0].toUpperCase() : "👤"}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 800 }}>{user ? user.name : "Guest User"}</div>
                   <div style={{ fontSize: 11.5, color: "#64748b", fontWeight: 600 }}>{user ? user.email : "Login to save your data"}</div>
                 </div>
-                <button
-                  className="bz-primary"
-                  style={{ padding: "8px 14px", fontSize: 12 }}
-                  onClick={() => { setMenuOpen(false); user ? logout() : setShowLogin(true); }}
-                >
-                  {user ? "Logout" : "Login"}
-                </button>
+                <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => { setMenuOpen(false); user ? logout() : setShowLogin(true); }}>{user ? "Logout" : "Login"}</button>
               </div>
-
               <div className="bz-drawer-title">Shop by Category</div>
               {CATEGORIES.map(c => (
-                <button key={c.name} className="bz-menu-link" onClick={() => { setCat(c.name); setPage(null); setMenuOpen(false); }}>
-                  <span>{c.icon}</span>{c.name}
-                </button>
+                <button key={c.name} className="bz-menu-link" onClick={() => { setCat(c.name); setPage(null); setMenuOpen(false); }}><span>{c.icon}</span>{c.name}</button>
               ))}
-
               <div className="bz-drawer-title">Company</div>
               <button className="bz-menu-link" onClick={() => goTo("about")}><span>ℹ️</span>About Us</button>
               <button className="bz-menu-link" onClick={() => goTo("contact")}><span>📞</span>Contact Us</button>
@@ -1176,7 +1097,6 @@ export default function Home() {
               <button className="bz-menu-link" onClick={() => goTo("terms")}><span>📄</span>Terms & Conditions</button>
               <button className="bz-menu-link" onClick={() => goTo("refund")}><span>🔄</span>Refund Policy</button>
               <button className="bz-menu-link" onClick={() => goTo("shipping")}><span>🚚</span>Shipping Policy</button>
-
               <div className="bz-drawer-title">Admin</div>
               <button className="bz-menu-link" onClick={() => { setMenuOpen(false); handleAdminOpen(); }}><span>⚙️</span>Admin Panel</button>
             </aside>
@@ -1188,52 +1108,30 @@ export default function Home() {
           <>
             <div className="bz-overlay" onClick={() => setShowCart(false)} />
             <aside className="bz-drawer right">
-              <div className="bz-drawer-head">
-                <h3>🛒 My Cart ({cartCount})</h3>
-                <button className="bz-close" onClick={() => setShowCart(false)}>✕</button>
-              </div>
-
+              <div className="bz-drawer-head"><h3>🛒 My Cart ({cartCount})</h3><button className="bz-close" onClick={() => setShowCart(false)}>✕</button></div>
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {cart.length === 0 ? (
-                  <div className="bz-empty">
-                    <div>🛒</div>
-                    <h4>Your cart is empty</h4>
-                    <p>Add some amazing deals!</p>
-                    <button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowCart(false)}>Start Shopping</button>
-                  </div>
-                ) : (
-                  cart.map(item => (
-                    <div className="bz-cart-item" key={item.id}>
-                      <div className="bz-cart-thumb">
-                        <img src={item.image} alt={item.title} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price * item.qty}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div className="bz-qty">
-                            <button onClick={() => changeQty(item.id, -1)}>−</button>
-                            <span>{item.qty}</span>
-                            <button onClick={() => changeQty(item.id, 1)}>+</button>
-                          </div>
-                          <button style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 800 }} onClick={() => removeFromCart(item.id)}>
-                            Remove
-                          </button>
-                        </div>
+                  <div className="bz-empty"><div>🛒</div><h4>Your cart is empty</h4><p>Add some amazing deals!</p><button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowCart(false)}>Start Shopping</button></div>
+                ) : cart.map(item => (
+                  <div className="bz-cart-item" key={item.id}>
+                    <div className="bz-cart-thumb"><img src={item.image} alt={item.title} /></div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price * item.qty}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div className="bz-qty"><button onClick={() => changeQty(item.id, -1)}>−</button><span>{item.qty}</span><button onClick={() => changeQty(item.id, 1)}>+</button></div>
+                        <button style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 800 }} onClick={() => removeFromCart(item.id)}>Remove</button>
                       </div>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
-
               {cart.length > 0 && (
                 <div className="bz-cart-foot">
                   <div className="bz-cart-row"><span>Subtotal</span><b>₹{cartTotal}</b></div>
                   <div className="bz-cart-row"><span>Delivery</span><b style={{ color: "#16a34a" }}>FREE</b></div>
                   <div className="bz-cart-row bz-total"><span>Total</span><b>₹{cartTotal}</b></div>
-                  <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={checkout}>
-                    PROCEED TO CHECKOUT →
-                  </button>
+                  <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={checkout}>PROCEED TO CHECKOUT →</button>
                 </div>
               )}
             </aside>
@@ -1245,41 +1143,23 @@ export default function Home() {
           <>
             <div className="bz-overlay" onClick={() => setShowWish(false)} />
             <aside className="bz-drawer right">
-              <div className="bz-drawer-head">
-                <h3>❤️ My Wishlist ({wishProducts.length})</h3>
-                <button className="bz-close" onClick={() => setShowWish(false)}>✕</button>
-              </div>
-
+              <div className="bz-drawer-head"><h3>❤️ My Wishlist ({wishProducts.length})</h3><button className="bz-close" onClick={() => setShowWish(false)}>✕</button></div>
               <div style={{ flex: 1, overflowY: "auto" }}>
                 {wishProducts.length === 0 ? (
-                  <div className="bz-empty">
-                    <div>💔</div>
-                    <h4>Wishlist is empty</h4>
-                    <p>Tap the heart on any product</p>
-                    <button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowWish(false)}>Browse Deals</button>
-                  </div>
-                ) : (
-                  wishProducts.map(item => (
-                    <div className="bz-cart-item" key={item.id}>
-                      <div className="bz-cart-thumb">
-                        <img src={item.image} alt={item.title} />
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
-                        <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price}</div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
-                          <button className="bz-btn-cart" style={{ flex: 1, padding: "7px" }} onClick={() => addToCart(item)}>ADD TO CART</button>
-                          <button
-                            style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 800, padding: "0 6px" }}
-                            onClick={() => toggleWish(item.id)}
-                          >
-                            Remove
-                          </button>
-                        </div>
+                  <div className="bz-empty"><div>💔</div><h4>Wishlist is empty</h4><p>Tap the heart on any product</p><button className="bz-primary" style={{ marginTop: 12 }} onClick={() => setShowWish(false)}>Browse Deals</button></div>
+                ) : wishProducts.map(item => (
+                  <div className="bz-cart-item" key={item.id}>
+                    <div className="bz-cart-thumb"><img src={item.image} alt={item.title} /></div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{item.title}</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, marginTop: 4 }}>₹{item.price}</div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                        <button className="bz-btn-cart" style={{ flex: 1, padding: "7px" }} onClick={() => addToCart(item)}>ADD TO CART</button>
+                        <button style={{ fontSize: 11.5, color: "#dc2626", fontWeight: 800, padding: "0 6px" }} onClick={() => toggleWish(item.id)}>Remove</button>
                       </div>
                     </div>
-                  ))
-                )}
+                  </div>
+                ))}
               </div>
             </aside>
           </>
@@ -1289,47 +1169,21 @@ export default function Home() {
         {selected && (
           <div className="bz-modal" onClick={() => setSelected(null)}>
             <div className="bz-modal-card" onClick={e => e.stopPropagation()}>
-              <button
-                className="bz-close"
-                style={{ position: "absolute", top: 12, right: 12, background: "rgba(15,23,42,.55)", color: "#fff", zIndex: 5 }}
-                onClick={() => setSelected(null)}
-              >✕</button>
-
-              <div className="bz-modal-img">
-                <img
-                  src={selected.image}
-                  alt={selected.title}
-                  onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }}
-                />
-              </div>
-
+              <button className="bz-close" style={{ position: "absolute", top: 12, right: 12, background: "rgba(15,23,42,.55)", color: "#fff", zIndex: 5 }} onClick={() => setSelected(null)}>✕</button>
+              <div className="bz-modal-img"><img src={selected.image} alt={selected.title} onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800"; }} /></div>
               <div style={{ padding: 22 }}>
                 <h2 style={{ fontSize: 19, lineHeight: 1.35, fontWeight: 800 }}>{selected.title}</h2>
-
                 <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "10px 0" }}>
                   <span className="bz-rate">{selected.rating} ★</span>
                   <span className="bz-reviews">{getReviews(selected.id).toLocaleString()} ratings</span>
                   <span style={{ fontSize: 11, color: "#16a34a", fontWeight: 800 }}>✔ Verified</span>
                 </div>
-
-                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>
-                  Premium quality product from our curated collection. Delivered fast via trusted partner stores like Amazon & Flipkart. Checkout safely with bank-grade security and easy returns.
-                </p>
-
-                <div className="bz-price" style={{ margin: "14px 0" }}>
-                  <b style={{ fontSize: 26 }}>₹{selected.price}</b>
-                  <s>₹{selected.mrp}</s>
-                  <em>{off(selected)}% off</em>
-                </div>
-
+                <p style={{ fontSize: 13.5, color: "#475569", lineHeight: 1.65 }}>Premium quality product from our curated collection. Delivered fast via trusted partner stores like Amazon & Flipkart. Checkout safely with bank-grade security and easy returns.</p>
+                <div className="bz-price" style={{ margin: "14px 0" }}><b style={{ fontSize: 26 }}>₹{selected.price}</b><s>₹{selected.mrp}</s><em>{off(selected)}% off</em></div>
                 <div className="bz-modal-actions">
                   <button className="bz-btn-cart" onClick={() => addToCart(selected)}>ADD TO CART</button>
                   <button className="bz-btn-buy" onClick={() => handleBuyClick(selected)}>BUY NOW →</button>
                 </div>
-
-                <p style={{ fontSize: 11.5, color: "#94a3b8", marginTop: 12, textAlign: "center", fontWeight: 600 }}>
-                  🔒 Secure checkout on partner site • Free delivery above ₹499
-                </p>
               </div>
             </div>
           </div>
@@ -1343,32 +1197,24 @@ export default function Home() {
                 <div style={{ textAlign: "center", marginBottom: 18 }}>
                   <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>👋</div>
                   <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Welcome to BAZARU</h2>
-                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
-                    Login to save your cart & wishlist
-                  </p>
+                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>Login to save your cart & wishlist</p>
                 </div>
-
                 <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
                   {["login", "signup", "forgot"].map(m => (
                     <button key={m} onClick={() => setAuthMode(m)} style={{ flex: 1, padding: "9px", borderRadius: 9, background: authMode === m ? "#7c3aed" : "#f1f5f9", color: authMode === m ? "#fff" : "#475569", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{m === "forgot" ? "Forgot?" : m}</button>
                   ))}
                 </div>
-
                 <input className="bz-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" />
                 {authMode !== "forgot" && <input className="bz-input" style={{ marginTop: 10 }} type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password (min 6)" />}
                 {authMode === "login" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleAuthLogin}>{authLoading ? "Checking..." : "LOGIN"}</button>}
                 {authMode === "signup" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleSignup}>{authLoading ? "Creating..." : "CREATE ACCOUNT"}</button>}
                 {authMode === "forgot" && <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleForgot}>SEND RESET LINK 📧</button>}
-
                 {user && <div style={{ marginTop: 14, borderTop: "1px dashed #e2e8f0", paddingTop: 12 }}>
                   <p style={{ fontSize: 12, fontWeight: 800, marginBottom: 6 }}>🔒 Change Password</p>
                   <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password" />
                   <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleChangePassword}>CHANGE PASSWORD</button>
                 </div>}
-
-                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>
-                  Cancel
-                </button>
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowLogin(false)}>Cancel</button>
               </div>
             </div>
           </div>
@@ -1382,59 +1228,48 @@ export default function Home() {
                 <div style={{ textAlign: "center", marginBottom: 18 }}>
                   <div style={{ fontSize: 42, animation: "bzFloat 3s ease-in-out infinite" }}>🔑</div>
                   <h2 style={{ fontSize: 20, marginTop: 8, fontWeight: 800 }}>Reset Password</h2>
-                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>
-                    Set new password (min 6 characters)
-                  </p>
+                  <p style={{ fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: 600 }}>Set new password (min 6 chars)</p>
                 </div>
-
-                <input
-                  className="bz-input"
-                  type="password"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="New Password (min 6)"
-                />
-
-                <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleResetPassword}>
-                  SET NEW PASSWORD
-                </button>
-
-                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setShowResetPassword(false); setNewPassword(""); }}>
-                  Cancel
-                </button>
+                <input className="bz-input" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New Password (min 6)" />
+                <button className="bz-primary" style={{ width: "100%", marginTop: 12 }} onClick={handleResetPassword}>SET NEW PASSWORD</button>
+                <button className="bz-ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => { setShowResetPassword(false); setNewPassword(""); }}>Cancel</button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ================= ADMIN MODAL ================= */}
+        {/* ================= ADMIN MODAL (WITH LEVEL 3) ================= */}
         {showAdmin && (
           <div className="bz-modal" onClick={() => setShowAdmin(false)}>
-            <div className="bz-modal-card" style={{ maxWidth: 680 }} onClick={e => e.stopPropagation()}>
+            <div className="bz-modal-card" style={{ maxWidth: 720 }} onClick={e => e.stopPropagation()}>
               <div className="bz-drawer-head">
-                <h3>⚙️ Admin Panel - {user?.email}</h3>
+                <h3>⚙️ Admin Panel - {user?.email} {isSuperAdmin ? "👑" : adminRole === "full_admin" ? "🎯" : "🔒"}</h3>
                 <button className="bz-close" onClick={() => setShowAdmin(false)}>✕</button>
               </div>
-
               <div style={{ padding: 22 }}>
                 {!isAdmin ? (
                   <div style={{ textAlign: "center", padding: 20 }}>
                     <p style={{ fontSize: 14, fontWeight: 800 }}>Only Admin can open this!</p>
-                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Login with run4ravish@gmail.com first, then Admin will open.</p>
+                    <p style={{ fontSize: 12, color: "#64748b", marginTop: 6 }}>Login with run4ravish@gmail.com first.</p>
                   </div>
                 ) : (
                   <>
                     <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-                      {["products", "users", "sliders", "clicks", "logins"].map(t => (
+                      {["products", "users", "sliders", "clicks", "logins"].filter(t => canSee(t)).map(t => (
                         <button key={t} onClick={() => { setAdminTab(t); if (t === "users") loadAllUsers(); if (t === "clicks") loadClicks(); if (t === "logins") { loadAllUsers(); loadLoginHistory(); } }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === t ? "#7c3aed" : "#f1f5f9", color: adminTab === t ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>{t === "logins" ? "Logins" : t}</button>
                       ))}
-                      <button onClick={() => { setAdminTab("approvals"); loadApprovals(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "approvals" ? "#7c3aed" : "#f1f5f9", color: adminTab === "approvals" ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>
-                        Approvals {approvals.length > 0 ? `(${approvals.length})` : ""}
-                      </button>
+                      {canSee("approvals") && (
+                        <button onClick={() => { setAdminTab("approvals"); loadApprovals(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "approvals" ? "#7c3aed" : "#f1f5f9", color: adminTab === "approvals" ? "#fff" : "#333", fontWeight: 800, fontSize: 12, textTransform: "uppercase" }}>
+                          Approvals {approvals.length > 0 ? `(${approvals.length})` : ""}
+                        </button>
+                      )}
+                      {isSuperAdmin && (
+                        <button onClick={() => { setAdminTab("settings"); loadBanList(); loadAllUsers(); }} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: adminTab === "settings" ? "#111827" : "#f1f5f9", color: adminTab === "settings" ? "#fff" : "#333", fontWeight: 800, fontSize: 12 }}>⚙️ SETTINGS</button>
+                      )}
                     </div>
 
                     {/* === PRODUCTS TAB === */}
-                    {adminTab === "products" && (
+                    {adminTab === "products" && canSee("products") && (
                       <div>
                         <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>➕ Add New Product</h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -1446,65 +1281,57 @@ export default function Home() {
                               <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
                             </select>
                           </div>
-                          <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL (https://...)" />
-                          <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
+                          <input className="bz-input" value={newProd.image} onChange={e => setNewProd({ ...newProd, image: e.target.value })} placeholder="Image URL" />
+                          <input className="bz-input" value={newProd.affiliate_url} onChange={e => setNewProd({ ...newProd, affiliate_url: e.target.value })} placeholder="Affiliate link" />
                           <button className="bz-primary" onClick={addProduct}>+ ADD PRODUCT</button>
                         </div>
 
                         <div style={{ display: "flex", gap: 8, margin: "20px 0 12px", flexWrap: "wrap" }}>
-                          <button onClick={() => setShowHiddenTab(false)} style={{ background: showHiddenTab ? "#f1f5f9" : "#4f46e5", color: showHiddenTab ? "#333" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
-                            ✅ Active Products ({products.length})
-                          </button>
-                          <button onClick={() => { setShowHiddenTab(true); loadHiddenProducts(); }} style={{ background: showHiddenTab ? "#f59e0b" : "#f1f5f9", color: showHiddenTab ? "#fff" : "#333", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>
-                            👁️ Hidden Products ({hiddenProducts.length})
-                          </button>
+                          <button onClick={() => setShowHiddenTab(false)} style={{ background: showHiddenTab ? "#f1f5f9" : "#4f46e5", color: showHiddenTab ? "#333" : "#fff", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Active ({products.length})</button>
+                          <button onClick={() => { setShowHiddenTab(true); loadHiddenProducts(); }} style={{ background: showHiddenTab ? "#f59e0b" : "#f1f5f9", color: showHiddenTab ? "#fff" : "#333", padding: "8px 14px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>👁️ Hidden ({hiddenProducts.length})</button>
                         </div>
                         <div style={{ maxHeight: 340, overflowY: "auto", border: "1px solid #e2e8f0", borderRadius: 12 }}>
-                          {(showHiddenTab ? hiddenProducts : products).length === 0 ? (
-                            <p style={{ padding: 20, textAlign: "center", color: "#94a3b8", fontSize: 13 }}>
-                              {showHiddenTab ? "No hidden products." : "No active products."}
-                            </p>
-                          ) : (showHiddenTab ? hiddenProducts : products).map(p => (
+                          {(showHiddenTab ? hiddenProducts : products).map(p => (
                             <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", padding: "10px 12px", borderBottom: "1px solid #f1f5f9", flexWrap: "wrap" }}>
-                              <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} />
+                              <img src={p.image} alt={p.title} style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 8 }} />
                               <span style={{ fontSize: 13, fontWeight: 700, flex: 1, minWidth: 100 }}>{p.title} — <b>₹{p.price}</b></span>
-                              {showHiddenTab ? (
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✏️ Edit</button>
-                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Show Again</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
-                                </div>
-                              ) : (
-                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                                  <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✏️ Edit</button>
+                              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                <button onClick={() => openEditProduct(p)} style={{ background: "#e0e7ff", color: "#4338ca", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✏️ Edit</button>
+                                {showHiddenTab ? (
+                                  <button onClick={() => showProduct(p)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Show</button>
+                                ) : (
                                   <button onClick={() => hideProduct(p.id)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>👁️ Hide</button>
-                                  <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
-                                </div>
-                              )}
+                                )}
+                                <button onClick={() => deleteProduct(p)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 12px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
+                              </div>
                             </div>
                           ))}
                         </div>
-                        {!isSuperAdmin && <p style={{ fontSize: 11.5, color: "#f59e0b", fontWeight: 700, marginTop: 8 }}>⏳ Note: Admin ka Edit / Delete Super Admin ke Approve ke baad hi complete hoga.</p>}
                       </div>
                     )}
 
                     {/* === USERS TAB === */}
-                    {adminTab === "users" && (
+                    {adminTab === "users" && canSee("users") && (
                       <div>
                         <input className="bz-input" value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User search by email..." style={{ marginBottom: 10 }} />
                         {allUsers.filter(u => u.email.toLowerCase().includes(userSearch.toLowerCase())).map(u => (
                           <div key={u.id} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, marginBottom: 8 }}>
                             <div style={{ fontSize: 13, fontWeight: 800 }}>{u.email} {u.is_admin ? "👑 ADMIN" : ""} {u.is_blocked ? "🚫 BLOCKED" : ""} {u.email === user?.email ? " (YOU)" : ""}</div>
                             <div style={{ fontSize: 12, color: "#64748b" }}>Coins: {u.coins || 0} | Logins: {u.login_count || 0} | Last Login: {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-IN") : "Never"} | Joined: {new Date(u.created_at).toLocaleDateString("en-IN")}</div>
+                            {u.is_blocked && u.ban_reason && (
+                              <div style={{ fontSize: 11.5, color: "#dc2626", marginTop: 4, background: "#fef2f2", padding: "5px 8px", borderRadius: 6, borderLeft: "3px solid #dc2626" }}>
+                                <b>Reason:</b> {u.ban_reason} {u.banned_until && <span> • Until: {new Date(u.banned_until).toLocaleString("en-IN")}</span>}
+                              </div>
+                            )}
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
                               {u.is_blocked ? (
                                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                                   <span style={{ background: "#fee2e2", color: "#dc2626", padding: "5px 8px", borderRadius: 6, fontSize: 11, fontWeight: 800 }}>⛔ INACTIVE</span>
-                                  <button onClick={() => unblockUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
+                                  <button onClick={() => unbanUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>✅ Unblock</button>
                                 </div>
                               ) : (
                                 <div style={{ display: "flex", gap: 6 }}>
-                                  <button onClick={() => toggleBlock(u)} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
+                                  <button onClick={() => { if (isSuperAdmin) setBanTarget(u); else toggleBlock(u); }} style={{ background: "#fef3c7", color: "#d97706", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>⛔ Block</button>
                                   <button onClick={() => deleteUserProfile(u)} style={{ background: "#fee2e2", color: "#dc2626", padding: "7px 10px", borderRadius: 8, fontWeight: 800, fontSize: 12 }}>🗑️ Delete</button>
                                 </div>
                               )}
@@ -1514,20 +1341,20 @@ export default function Home() {
                             </div>
                           </div>
                         ))}
-                        {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>No users found. Someone needs to signup first.</p>}
+                        {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#64748b" }}>No users found.</p>}
                       </div>
                     )}
 
                     {/* === SLIDERS TAB === */}
-                    {adminTab === "sliders" && (
+                    {adminTab === "sliders" && canSee("sliders") && (
                       <div>
                         <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12 }}>🎠 Add New Slider</h4>
                         <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                           <input className="bz-input" value={newSlide.title} onChange={e => setNewSlide({ ...newSlide, title: e.target.value })} placeholder="Slider Title" />
                           <input className="bz-input" value={newSlide.sub} onChange={e => setNewSlide({ ...newSlide, sub: e.target.value })} placeholder="Subtitle" />
                           <div style={{ display: "flex", gap: 9 }}>
-                            <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji 🛍️" />
-                            <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button - Shop Now" />
+                            <input className="bz-input" value={newSlide.emoji} onChange={e => setNewSlide({ ...newSlide, emoji: e.target.value })} placeholder="Emoji" />
+                            <input className="bz-input" value={newSlide.cta} onChange={e => setNewSlide({ ...newSlide, cta: e.target.value })} placeholder="Button text" />
                           </div>
                           <select className="bz-select" value={newSlide.bg} onChange={e => setNewSlide({ ...newSlide, bg: e.target.value })}>
                             <option value="linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#ec4899 100%)">Purple Pink</option>
@@ -1550,12 +1377,12 @@ export default function Home() {
                       </div>
                     )}
 
-                    {/* === LOGINS TAB - NEW === */}
-                    {adminTab === "logins" && (
+                    {/* === LOGINS TAB === */}
+                    {adminTab === "logins" && canSee("logins") && (
                       <div>
                         <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12, padding: 12, marginBottom: 12 }}>
-                          <div style={{ fontSize: 13, fontWeight: 800 }}>👤 Tumhara Status: {user?.email}</div>
-                          <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>{isSuperAdmin ? "👑 SUPER ADMIN" : "👑 ADMIN"} • {user?.email === ADMIN_EMAIL ? "Super Admin" : "Admin"} • Coins: {coins} • Is waqt Login ho ✅</div>
+                          <div style={{ fontSize: 13, fontWeight: 800 }}>👤 {user?.email}</div>
+                          <div style={{ fontSize: 12, color: "#475569", marginTop: 4 }}>{isSuperAdmin ? "👑 SUPER ADMIN" : adminRole === "full_admin" ? "🎯 FULL ADMIN" : "🔒 LIMITED ADMIN"} • Coins: {coins} • Logged in</div>
                         </div>
                         <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
                           <input className="bz-input" style={{ flex: 1, minWidth: 160 }} value={loginSearch} onChange={e => setLoginSearch(e.target.value)} placeholder="Search by email..." />
@@ -1567,7 +1394,7 @@ export default function Home() {
                           </select>
                           <button className="bz-ghost" style={{ padding: "9px 14px", fontSize: 12 }} onClick={() => { loadAllUsers(); loadLoginHistory(); }}>🔄 Refresh</button>
                         </div>
-                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>👥 Sab Users ka Status + Login History</h4>
+                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>👥 Users Status</h4>
                         <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
                           {allUsers.filter(u => {
                             if (loginSearch && !u.email.toLowerCase().includes(loginSearch.toLowerCase())) return false;
@@ -1582,143 +1409,74 @@ export default function Home() {
                                 <span style={{ fontSize: 11, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: u.is_blocked ? "#fee2e2" : "#dcfce7", color: u.is_blocked ? "#dc2626" : "#16a34a" }}>{u.is_blocked ? "🚫 BLOCKED" : "🟢 ACTIVE"}</span>
                               </div>
                               <div style={{ fontSize: 12, color: "#64748b", marginTop: 4, lineHeight: 1.6 }}>
-                                {u.is_admin ? "👑 ADMIN • " : "👤 User • "} Coins: {u.coins || 0} • Total Logins: {u.login_count || 0}<br />
-                                Last Login: {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-IN") : "Kabhi login nahi hua"}<br />
+                                {u.is_admin ? "👑 ADMIN • " : "👤 User • "} Coins: {u.coins || 0} • Logins: {u.login_count || 0}<br />
+                                Last Login: {u.last_login_at ? new Date(u.last_login_at).toLocaleString("en-IN") : "Never"}<br />
                                 Joined: {u.created_at ? new Date(u.created_at).toLocaleString("en-IN") : "-"}
                               </div>
                             </div>
                           ))}
-                          {allUsers.length === 0 && <p style={{ fontSize: 13, color: "#94a3b8", textAlign: "center", padding: 20 }}>No users found.</p>}
                         </div>
-                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>🕒 Recent Login History ({loginHistory.length})</h4>
+                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 8 }}>🕒 Recent Logins ({loginHistory.length})</h4>
                         <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
                           {loginHistory.filter(h => !loginSearch || (h.email || "").toLowerCase().includes(loginSearch.toLowerCase())).slice(0, 50).map((h, i) => (
                             <div key={h.id || i} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "8px 10px", background: "#f8fafc", borderRadius: 8, fontSize: 12 }}>
-                              <span style={{ fontWeight: 700 }}>{h.email} {h.email === user?.email ? "(YOU)" : ""}</span>
+                              <span style={{ fontWeight: 700 }}>{h.email}</span>
                               <span style={{ color: "#64748b" }}>{h.created_at ? new Date(h.created_at).toLocaleString("en-IN") : "-"}</span>
                             </div>
                           ))}
-                          {loginHistory.length === 0 && <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: 16 }}>Abhi tak koi login history nahi hai. Naya login hote hi yaha dikhega.</p>}
+                          {loginHistory.length === 0 && <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", padding: 16 }}>No login history yet.</p>}
                         </div>
                       </div>
                     )}
 
                     {/* === CLICKS TAB === */}
-                    {adminTab === "clicks" && (
+                    {adminTab === "clicks" && canSee("clicks") && (
                       <div>
                         <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
-                          {[
-                            { key: "daily", label: "📅 Daily" },
-                            { key: "weekly", label: "📆 Weekly" },
-                            { key: "monthly", label: "🗓️ Monthly" },
-                            { key: "yearly", label: "📊 Yearly" },
-                          ].map(f => (
-                            <button
-                              key={f.key}
-                              onClick={() => setClickFilter(f.key)}
-                              style={{
-                                flex: 1,
-                                minWidth: 80,
-                                padding: "9px",
-                                borderRadius: 9,
-                                background: clickFilter === f.key ? "#7c3aed" : "#f1f5f9",
-                                color: clickFilter === f.key ? "#fff" : "#333",
-                                fontWeight: 800,
-                                fontSize: 12,
-                                transition: ".2s"
-                              }}
-                            >
-                              {f.label}
-                            </button>
+                          {[{ key: "daily", label: "📅 Daily" }, { key: "weekly", label: "📆 Weekly" }, { key: "monthly", label: "🗓️ Monthly" }, { key: "yearly", label: "📊 Yearly" }].map(f => (
+                            <button key={f.key} onClick={() => setClickFilter(f.key)} style={{ flex: 1, minWidth: 80, padding: "9px", borderRadius: 9, background: clickFilter === f.key ? "#7c3aed" : "#f1f5f9", color: clickFilter === f.key ? "#fff" : "#333", fontWeight: 800, fontSize: 12 }}>{f.label}</button>
                           ))}
                         </div>
-
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                           <div style={{ background: "linear-gradient(135deg,#eef2ff,#f5f3ff)", border: "1px solid #c7d2fe", borderRadius: 14, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
-                              {clickFilter} Clicks
-                            </div>
-                            <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 4 }}>
-                              {clicks.filter(c => isInPeriod(c.created_at, clickFilter)).length}
-                            </div>
+                            <div style={{ fontSize: 11, color: "#64748b", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>{clickFilter} Clicks</div>
+                            <div style={{ fontSize: 26, fontWeight: 900, color: "#7c3aed", marginTop: 4 }}>{clicks.filter(c => isInPeriod(c.created_at, clickFilter)).length}</div>
                           </div>
                           <div style={{ background: "linear-gradient(135deg,#fef3c7,#ffedd5)", border: "1px solid #fcd34d", borderRadius: 14, padding: 14 }}>
-                            <div style={{ fontSize: 11, color: "#92400e", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
-                              All Time Clicks
-                            </div>
-                            <div style={{ fontSize: 26, fontWeight: 900, color: "#ea580c", marginTop: 4 }}>
-                              {clicks.length}
-                            </div>
+                            <div style={{ fontSize: 11, color: "#92400e", fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>All Time</div>
+                            <div style={{ fontSize: 26, fontWeight: 900, color: "#ea580c", marginTop: 4 }}>{clicks.length}</div>
                           </div>
                         </div>
-
-                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, color: "#334155" }}>
-                          👥 User-wise Breakdown ({getUserWiseClicks(clickFilter).length} users)
-                        </h4>
-
+                        <h4 style={{ fontSize: 14, fontWeight: 800, marginBottom: 10, color: "#334155" }}>👥 User-wise ({getUserWiseClicks(clickFilter).length})</h4>
                         {getUserWiseClicks(clickFilter).length === 0 ? (
                           <div style={{ textAlign: "center", padding: 40, background: "#f8fafc", borderRadius: 12 }}>
                             <div style={{ fontSize: 40, marginBottom: 8 }}>📭</div>
-                            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>
-                              No clicks in this period
-                            </p>
+                            <p style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>No clicks in this period</p>
                           </div>
                         ) : (
                           <div style={{ maxHeight: 340, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
                             {getUserWiseClicks(clickFilter).map((u, idx) => (
-                              <div key={u.email} style={{
-                                border: "1px solid #e2e8f0",
-                                borderRadius: 12,
-                                padding: 12,
-                                background: "#fff",
-                                boxShadow: "0 2px 6px rgba(15,23,42,.04)"
-                              }}>
+                              <div key={u.email} style={{ border: "1px solid #e2e8f0", borderRadius: 12, padding: 12, background: "#fff" }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <div style={{
-                                      width: 26, height: 26, borderRadius: "50%",
-                                      background: idx < 3 ? "linear-gradient(135deg,#fbbf24,#ea580c)" : "linear-gradient(135deg,#6366f1,#a855f7)",
-                                      color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
-                                      fontSize: 11, fontWeight: 800
-                                    }}>
-                                      {idx + 1}
-                                    </div>
-                                    <b style={{ fontSize: 13, color: "#0f172a" }}>{u.email}</b>
+                                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: idx < 3 ? "linear-gradient(135deg,#fbbf24,#ea580c)" : "linear-gradient(135deg,#6366f1,#a855f7)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800 }}>{idx + 1}</div>
+                                    <b style={{ fontSize: 13 }}>{u.email}</b>
                                   </div>
-                                  <span style={{
-                                    background: "linear-gradient(135deg,#16a34a,#15803d)",
-                                    color: "#fff", padding: "3px 10px", borderRadius: 999,
-                                    fontSize: 11, fontWeight: 800
-                                  }}>
-                                    {u.count} clicks
-                                  </span>
+                                  <span style={{ background: "linear-gradient(135deg,#16a34a,#15803d)", color: "#fff", padding: "3px 10px", borderRadius: 999, fontSize: 11, fontWeight: 800 }}>{u.count} clicks</span>
                                 </div>
-                                <div style={{ fontSize: 11.5, color: "#64748b", lineHeight: 1.5 }}>
-                                  {Object.entries(u.products).map(([p, c], i, arr) => (
-                                    <span key={p}>
-                                      <span style={{ color: "#334155", fontWeight: 700 }}>{p}</span>
-                                      <span style={{ color: "#7c3aed", fontWeight: 800 }}> ({c}×)</span>
-                                      {i < arr.length - 1 ? " • " : ""}
-                                    </span>
-                                  ))}
+                                <div style={{ fontSize: 11.5, color: "#64748b" }}>
+                                  {Object.entries(u.products).map(([p, c], i, arr) => (<span key={p}><b style={{ color: "#334155" }}>{p}</b> ({c}×){i < arr.length - 1 ? " • " : ""}</span>))}
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
-
-                        <button
-                          className="bz-ghost"
-                          style={{ width: "100%", marginTop: 12 }}
-                          onClick={loadClicks}
-                        >
-                          🔄 Refresh
-                        </button>
+                        <button className="bz-ghost" style={{ width: "100%", marginTop: 12 }} onClick={loadClicks}>🔄 Refresh</button>
                       </div>
                     )}
 
                     {/* === APPROVALS TAB === */}
-                    {adminTab === "approvals" && (
+                    {adminTab === "approvals" && canSee("approvals") && (
                       <div>
                         {approvals.length === 0 ? (
                           <p style={{ padding: 20, textAlign: "center", color: "#94a3b8" }}>No pending requests! 🎉</p>
@@ -1727,11 +1485,9 @@ export default function Home() {
                             <div style={{ fontSize: 13, fontWeight: 800 }}>{req.type.toUpperCase()} Request</div>
                             <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
                               From: <b>{req.requested_by}</b>
-                              {req.type === 'delete_product'
-                                ? <span> • Delete Product: <b>{req.target_email}</b></span>
-                                : req.type === 'edit_product'
-                                ? <span> • Edit Product: <b>{(() => { try { const d = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : JSON.parse(req.target_email); return d.title || req.target_email; } catch (e) { return req.target_email; } })()}</b>{(() => { try { const d = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : JSON.parse(req.target_email); return d.price ? <span> • New Price: <b>₹{d.price}</b> (MRP ₹{d.mrp})</span> : null; } catch (e) { return null; } })()}</span>
-                                : <span> → Target: <b>{req.target_email}</b></span>}
+                              {req.type === 'delete_product' ? <span> • Delete: <b>{req.target_email}</b></span>
+                                : req.type === 'edit_product' ? <span> • Edit: <b>{(() => { try { const d = req.product_data ? (typeof req.product_data === "string" ? JSON.parse(req.product_data) : req.product_data) : JSON.parse(req.target_email); return d.title || req.target_email; } catch (e) { return req.target_email; } })()}</b></span>
+                                : <span> → <b>{req.target_email}</b></span>}
                               {req.type === 'coins' && <span> • Coins: <b>+{req.amount}</b></span>}
                               {req.type === 'make_admin' && <span> • Make Admin: <b>{req.make_admin ? "YES" : "NO"}</b></span>}
                             </div>
@@ -1741,10 +1497,81 @@ export default function Home() {
                                 <button className="bz-ghost" style={{ padding: "8px 14px", fontSize: 12, background: "#fee2e2", color: "#dc2626" }} onClick={() => rejectRequest(req)}>❌ Reject</button>
                               </div>
                             ) : (
-                              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>⏳ Waiting for Super Admin approval...</div>
+                              <div style={{ fontSize: 12, color: "#f59e0b", marginTop: 8, fontWeight: 700 }}>⏳ Waiting for Super Admin...</div>
                             )}
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* === SETTINGS TAB (LEVEL 3 - NEW) === */}
+                    {adminTab === "settings" && isSuperAdmin && (
+                      <div>
+                        {/* Announcement */}
+                        <div style={{ background: "linear-gradient(135deg,#fef3c7,#fde68a)", border: "1px solid #fcd34d", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                          <h4 style={{ fontSize: 14, fontWeight: 800, color: "#92400e", marginBottom: 8 }}>📢 Site Announcement</h4>
+                          <p style={{ fontSize: 11.5, color: "#78350f", marginBottom: 8 }}>Ye message sab users ke header ke upar banner me dikhega. Khali chhodo to banner band ho jayega.</p>
+                          <input className="bz-input" value={newAnnouncement} onChange={e => setNewAnnouncement(e.target.value)} placeholder="e.g. 🎉 50% OFF Sale Live — Today Only!" style={{ marginBottom: 8 }} />
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button className="bz-primary" style={{ flex: 1, padding: "10px", fontSize: 12 }} onClick={saveAnnouncement}>💾 Save Announcement</button>
+                            <button className="bz-ghost" style={{ padding: "10px 16px", fontSize: 12 }} onClick={() => { setNewAnnouncement(""); }}>Clear</button>
+                          </div>
+                        </div>
+
+                        {/* Admin Permissions */}
+                        <div style={{ background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                          <h4 style={{ fontSize: 14, fontWeight: 800, color: "#4338ca", marginBottom: 4 }}>👑 Admin Permissions</h4>
+                          <p style={{ fontSize: 11.5, color: "#4338ca", marginBottom: 10 }}>Har admin ko tab-wise access do. Super Admin always has full access.</p>
+                          {allUsers.filter(u => u.is_admin && u.email !== ADMIN_EMAIL).length === 0 ? (
+                            <p style={{ fontSize: 12, color: "#64748b", padding: 10, textAlign: "center" }}>Koi aur admin nahi hai. Pehle kisi user ko Make Admin karo.</p>
+                          ) : allUsers.filter(u => u.is_admin && u.email !== ADMIN_EMAIL).map(admin => {
+                            const perms = admin.admin_perms ? (typeof admin.admin_perms === "string" ? JSON.parse(admin.admin_perms) : admin.admin_perms) : { products: true, users: true, sliders: true, clicks: true, logins: true, approvals: true };
+                            const role = admin.admin_role || "full_admin";
+                            return (
+                              <div key={admin.id} style={{ background: "#fff", border: "1px solid #c7d2fe", borderRadius: 10, padding: 12, marginBottom: 8 }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                                  <b style={{ fontSize: 13, color: "#1e293b" }}>{admin.email}</b>
+                                  <select className="bz-select" value={role} onChange={(e) => saveAdminPerms(admin.id, e.target.value, perms)} style={{ fontSize: 11, padding: "5px 8px" }}>
+                                    <option value="full_admin">🎯 Full Admin</option>
+                                    <option value="limited_admin">🔒 Limited Admin</option>
+                                  </select>
+                                </div>
+                                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                                  {["products", "users", "sliders", "clicks", "logins", "approvals"].map(tab => (
+                                    <label key={tab} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700, background: perms[tab] ? "#dcfce7" : "#f1f5f9", padding: "4px 8px", borderRadius: 6, cursor: role === "full_admin" ? "not-allowed" : "pointer", opacity: role === "full_admin" ? 0.5 : 1 }}>
+                                      <input type="checkbox" checked={perms[tab] !== false} disabled={role === "full_admin"} onChange={(e) => { const newPerms = { ...perms, [tab]: e.target.checked }; saveAdminPerms(admin.id, role, newPerms); }} />
+                                      {tab}
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Ban List */}
+                        <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 12, padding: 14 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 6 }}>
+                            <h4 style={{ fontSize: 14, fontWeight: 800, color: "#991b1b" }}>🚫 Banned Users ({banList.length})</h4>
+                            <button className="bz-ghost" style={{ padding: "6px 12px", fontSize: 11 }} onClick={loadBanList}>🔄 Refresh</button>
+                          </div>
+                          {banList.length === 0 ? (
+                            <p style={{ fontSize: 12, color: "#64748b", textAlign: "center", padding: 16 }}>Koi banned user nahi hai.</p>
+                          ) : (
+                            <div style={{ maxHeight: 260, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6 }}>
+                              {banList.map(u => (
+                                <div key={u.id} style={{ background: "#fff", border: "1px solid #fecaca", borderRadius: 8, padding: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                  <div style={{ flex: 1, minWidth: 120 }}>
+                                    <b style={{ fontSize: 12.5, color: "#1e293b" }}>{u.email}</b>
+                                    {u.ban_reason && <div style={{ fontSize: 11, color: "#dc2626", marginTop: 2 }}>Reason: {u.ban_reason}</div>}
+                                    {u.banned_until && <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>Until: {new Date(u.banned_until).toLocaleString("en-IN")}</div>}
+                                  </div>
+                                  <button onClick={() => unbanUser(u)} style={{ background: "#dcfce7", color: "#16a34a", padding: "6px 12px", borderRadius: 8, fontWeight: 800, fontSize: 11 }}>✅ Unban</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </>
@@ -1754,7 +1581,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* ================= EDIT PRODUCT MODAL - NEW ================= */}
+        {/* ================= EDIT PRODUCT MODAL ================= */}
         {editingProduct && (
           <div className="bz-modal" onClick={() => setEditingProduct(null)}>
             <div className="bz-modal-card" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
@@ -1763,7 +1590,10 @@ export default function Home() {
                   <h2 style={{ fontSize: 19, fontWeight: 800 }}>✏️ Edit Product</h2>
                   <button className="bz-close" style={{ background: "#f1f5f9", color: "#333" }} onClick={() => setEditingProduct(null)}>✕</button>
                 </div>
-                <p style={{ fontSize: 12.5, color: "#64748b", marginBottom: 14 }}>Editing: <b>{editingProduct.title}</b>{!isSuperAdmin && <span style={{ color: "#f59e0b", fontWeight: 800 }}> • Approval ke baad hi update hoga ⏳</span>}</p>
+                <p style={{ fontSize: 12.5, color: "#64748b", marginBottom: 14 }}>
+                  Editing: <b>{editingProduct.title}</b>
+                  {!isSuperAdmin && <span style={{ color: "#f59e0b", fontWeight: 800 }}> • Approval needed ⏳</span>}
+                </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <input className="bz-input" value={editProd.title} onChange={e => setEditProd({ ...editProd, title: e.target.value })} placeholder="Product title" />
                   <div style={{ display: "flex", gap: 9 }}>
@@ -1773,10 +1603,40 @@ export default function Home() {
                   <select className="bz-select" value={editProd.category} onChange={e => setEditProd({ ...editProd, category: e.target.value })}>
                     <option>Mobiles</option><option>Fashion</option><option>Electronics</option><option>Home</option><option>Beauty</option>
                   </select>
-                  <input className="bz-input" value={editProd.image} onChange={e => setEditProd({ ...editProd, image: e.target.value })} placeholder="Image URL (https://...)" />
-                  <input className="bz-input" value={editProd.affiliate_url} onChange={e => setEditProd({ ...editProd, affiliate_url: e.target.value })} placeholder="Affiliate / Partner link" />
+                  <input className="bz-input" value={editProd.image} onChange={e => setEditProd({ ...editProd, image: e.target.value })} placeholder="Image URL" />
+                  <input className="bz-input" value={editProd.affiliate_url} onChange={e => setEditProd({ ...editProd, affiliate_url: e.target.value })} placeholder="Affiliate link" />
                   <button className="bz-primary" style={{ width: "100%" }} onClick={saveEditProduct}>{isSuperAdmin ? "💾 SAVE CHANGES" : "📩 SEND FOR APPROVAL"}</button>
                   <button className="bz-ghost" style={{ width: "100%" }} onClick={() => setEditingProduct(null)}>Cancel</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= BAN MODAL (NEW) ================= */}
+        {banTarget && (
+          <div className="bz-modal" onClick={() => { setBanTarget(null); setBanReason(""); setBanDays("7"); }}>
+            <div className="bz-modal-card" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+              <div style={{ padding: 24 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <h2 style={{ fontSize: 19, fontWeight: 800, color: "#dc2626" }}>⛔ Ban User</h2>
+                  <button className="bz-close" style={{ background: "#f1f5f9", color: "#333" }} onClick={() => { setBanTarget(null); setBanReason(""); setBanDays("7"); }}>✕</button>
+                </div>
+                <p style={{ fontSize: 12.5, color: "#64748b", marginBottom: 14 }}>Banning: <b>{banTarget.email}</b></p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input className="bz-input" value={banReason} onChange={e => setBanReason(e.target.value)} placeholder="Reason (e.g. spam, abuse, fake account)" />
+                  <select className="bz-select" value={banDays} onChange={e => setBanDays(e.target.value)}>
+                    <option value="1">1 Day</option>
+                    <option value="3">3 Days</option>
+                    <option value="7">7 Days</option>
+                    <option value="15">15 Days</option>
+                    <option value="30">30 Days</option>
+                    <option value="90">90 Days</option>
+                    <option value="365">1 Year</option>
+                    <option value="3650">10 Years (Permanent)</option>
+                  </select>
+                  <button className="bz-primary" style={{ width: "100%", background: "linear-gradient(135deg,#dc2626,#991b1b)" }} onClick={banUser}>⛔ CONFIRM BAN</button>
+                  <button className="bz-ghost" style={{ width: "100%" }} onClick={() => { setBanTarget(null); setBanReason(""); setBanDays("7"); }}>Cancel</button>
                 </div>
               </div>
             </div>
@@ -1792,14 +1652,14 @@ export default function Home() {
                 <h2 style={{ fontSize: 22, fontWeight: 800 }}>Coin Shop</h2>
                 <p style={{ fontSize: 13, color: "#64748b", fontWeight: 600 }}>You have <b style={{ color: "#f59e0b", fontSize: 16 }}>{coins} Coins</b></p>
                 <button className="bz-primary" style={{ width: "100%", margin: "14px 0 6px" }} onClick={claimCoins}>🎁 Claim Today's +10 Coin</button>
-                <p style={{ fontSize: 11, color: "#94a3b8" }}>You can claim once per day</p>
+                <p style={{ fontSize: 11, color: "#94a3b8" }}>Once per day</p>
                 <div style={{ textAlign: "left", marginTop: 16, display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fffbeb", border: "1px solid #fde68a", padding: 12, borderRadius: 12 }}>
                     <div><b style={{ fontSize: 14 }}>🪙 50 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹5 OFF Coupon</div></div>
                     <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(50, "₹5 OFF")}>Redeem</button>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: 12, borderRadius: 12 }}>
-                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF Coupon + Free Delivery</div></div>
+                    <div><b style={{ fontSize: 14 }}>🪙 100 Coins</b><div style={{ fontSize: 12, color: "#64748b" }}>₹10 OFF + Free Delivery</div></div>
                     <button className="bz-primary" style={{ padding: "8px 14px", fontSize: 12 }} onClick={() => redeemCoins(100, "₹10 OFF")}>Redeem</button>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#eef2ff", border: "1px solid #c7d2fe", padding: 12, borderRadius: 12 }}>
